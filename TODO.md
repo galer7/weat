@@ -1,0 +1,3 @@
+- [ ] create separate ws server
+- [ ] mock some glovo data
+- [ ] skeleton frontend
