@@ -13,8 +13,8 @@ const Food: NextPage = () => {
     });
   }, []);
 
-  const foodCarousel = <div>food selector</div>;
-  const [foodSelectors, setFoodSelectors] = useState([foodCarousel]);
+  const makeFoodCarousel = (key: number) => <div key={key}>food selector</div>;
+  const [foodSelectors, setFoodSelectors] = useState([makeFoodCarousel(0)]);
 
   const users = [
     { name: "you" },
@@ -47,7 +47,7 @@ const Food: NextPage = () => {
             {foodSelectors.map((elem, index) => {
               if (index > 0 && name === "you") {
                 return (
-                  <div className="flex justify-center">
+                  <div className="flex justify-center" key={index}>
                     {elem}
                     <button
                       className="rounded-full bg-black text-white w-8 h-8"
@@ -67,7 +67,10 @@ const Food: NextPage = () => {
               <button
                 className="rounded-full bg-black text-white w-8 h-8"
                 onClick={() =>
-                  setFoodSelectors([...foodSelectors, foodCarousel])
+                  setFoodSelectors([
+                    ...foodSelectors,
+                    makeFoodCarousel(foodSelectors.length),
+                  ])
                 }
               >
                 +
