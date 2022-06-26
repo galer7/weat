@@ -1,6 +1,4 @@
 import type { NextPage } from "next";
-import Head from "next/head";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -13,7 +11,9 @@ const Food: NextPage = () => {
     });
   }, []);
 
-  const makeFoodCarousel = (key: number) => <div key={key}>food selector</div>;
+  const makeFoodCarousel = (key: number) => (
+    <div key={key}>food selector {key}</div>
+  );
   const [foodSelectors, setFoodSelectors] = useState([makeFoodCarousel(0)]);
 
   const users = [
@@ -44,17 +44,18 @@ const Food: NextPage = () => {
           >
             <div className="m-4">{name}</div>
             <div>restaurant selector</div>
-            {foodSelectors.map((elem, index) => {
-              if (index > 0 && name === "you") {
+            {foodSelectors.map((elem, selectorIndex) => {
+              if (selectorIndex > 0 && name === "you") {
                 return (
-                  <div className="flex justify-center" key={index}>
+                  <div className="flex justify-center" key={selectorIndex}>
                     {elem}
                     <button
                       className="rounded-full bg-black text-white w-8 h-8"
-                      onClick={() => {
-                        const temp = foodSelectors.slice(0, -1);
-                        setFoodSelectors(temp);
-                      }}
+                      onClick={() =>
+                        setFoodSelectors(
+                          foodSelectors.filter((_, i) => i !== selectorIndex)
+                        )
+                      }
                     >
                       -
                     </button>
