@@ -1,8 +1,9 @@
 import { NextPage } from "next";
 import React from "react";
+import { trpc } from "../utils/trpc";
 
 interface FormElements extends HTMLFormControlsCollection {
-  username: HTMLInputElement;
+  email: HTMLInputElement;
   password: HTMLInputElement;
 }
 
@@ -11,11 +12,15 @@ interface YourFormElement extends HTMLFormElement {
 }
 
 const Register: NextPage = () => {
-  const handleSubmit = (event: React.FormEvent<YourFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<YourFormElement>) => {
     event.preventDefault();
 
-    // TODO: Post request
-    console.log(event.currentTarget.elements.username.value);
+    const {
+      email: { value: email },
+      password: { value: password },
+    } = event.currentTarget.elements;
+
+    await trpc.useMutation("register", { email, password_hash });
   };
 
   return (

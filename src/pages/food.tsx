@@ -1,6 +1,8 @@
 import type { NextPage } from "next";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import useComponentVisible from "@/hooks/useComponentVisible";
+import Modal from "@/components/Modal";
 
 const Food: NextPage = () => {
   useEffect(() => {
@@ -15,6 +17,8 @@ const Food: NextPage = () => {
     <div key={key}>food selector {key}</div>
   );
   const [foodSelectors, setFoodSelectors] = useState([makeFoodCarousel(0)]);
+  const { ref, isComponentVisible, setIsComponentVisible } =
+    useComponentVisible<HTMLDivElement>(false);
 
   const users = [
     { name: "you" },
@@ -79,6 +83,9 @@ const Food: NextPage = () => {
             )}
             <hr className="bg-black h-1" />
             <div>total: </div>
+            {name === "you" && (
+              <div ref={ref}>{isComponentVisible && <Modal />}</div>
+            )}
           </div>
         ))}
       </div>
