@@ -14,4 +14,8 @@ The app will consume the food catering app's API in order to list different offe
 Weighed price computation will not deserve much attention as some items from the food catering app will often be bundles.
 
 The client will establish a WS connection with one of the WS servers.
-How do we know that the client will send correct data to the WS server? I must check that 
+How do we know that the client will send correct data to the WS server? I must check that
+
+# Links
+1. use ref for modal show/hide: https://stackoverflow.com/questions/33796267/how-to-use-refs-in-react-with-typescript
+2. https://stackoverflow.com/questions/61102101/cannot-assign-refobjecthtmldivelement-to-refobjecthtmlelement-instance
