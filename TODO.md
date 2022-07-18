@@ -1,13 +1,3 @@
-EASY
-- [x] connect planetscale
-- [x] add prisma
-- [ ] write register page
-- [ ] write login page
-- [ ] add trpc
-
-MID
-- [ ] add next auth with creds
-- [ ] create first version of ws server (in node)
-
-HARD
-- [ ] create separate ws server (go or rust)
+- [x] create first version of ws server (in node)
+- [ ] learn how I can keep track of sessions, so that I can render each member properly
+- [ ] 

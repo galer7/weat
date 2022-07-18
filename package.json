@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "next:dev": "next dev",
-    "ws:dev": "env-cmd -f .env.local src/backend/websocket/index.js",
+    "dev": "next dev",
+    "ws:dev": "node ./src/backend/websocket/index.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

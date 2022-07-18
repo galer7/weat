@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
+import useSocket from "@/hooks/useSocket";
 
 const Food: NextPage = () => {
   useEffect(() => {
@@ -19,6 +20,7 @@ const Food: NextPage = () => {
   const [foodSelectors, setFoodSelectors] = useState([makeFoodCarousel(0)]);
   const { ref, isComponentVisible, setIsComponentVisible } =
     useComponentVisible<HTMLDivElement>(false);
+  useSocket();
 
   const users = [
     { name: "you" },
