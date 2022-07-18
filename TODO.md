@@ -1,3 +1,0 @@
-- [x] create first version of ws server (in node)
-- [ ] learn how I can keep track of sessions, so that I can render each member properly
-- [ ] 
