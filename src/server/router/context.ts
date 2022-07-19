@@ -15,6 +15,7 @@ export const createContext = async (
   const session =
     req && res && (await getServerSession(req, res, nextAuthOptions));
 
+  // These are added on every resolver's params
   return {
     req,
     res,

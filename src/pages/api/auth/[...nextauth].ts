@@ -1,5 +1,6 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { compare } from 'bcrypt';
 
 // Prisma adapter for NextAuth, optional and can be removed
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
@@ -14,6 +15,10 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    signIn(params) {
+      console.log('SignIn callback:', { params });
+      return true
+    }
   },
   // Configure one or more authentication providers
   adapter: PrismaAdapter(prisma),
@@ -22,20 +27,28 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        name: {
-          label: "Name",
+        email: {
+          label: "Email",
           type: "text",
-          placeholder: "Enter your name",
+          placeholder: "Enter your email",
+        },
+        password: {
+          label: "Password",
+          type: "password",
+          placeholder: "Enter your password",
         },
       },
       async authorize(credentials, _req) {
         const user = await prisma.user.findFirst({
           where: {
-            name: credentials?.name
+            email: credentials?.email,
           }
-        })
+        });
 
-        if (!user) return null;
+        if (!user || !credentials?.password) return null;
+        const isSamePassword = await compare(credentials.password, user.password);
+        if (!isSamePassword) return null;
+
         return user;
       },
     }),

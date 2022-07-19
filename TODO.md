@@ -1,5 +1,7 @@
 - [ ] find how login and register works in next auth with credentials provider 😕
   - [x] register -> 3h debugging session because of superjson transformer
-  - [ ] login
-- [ ] find how sessions works
+  - [x] login using next-auth endpoint
+  - [ ] add google provider for fun
+  - [ ] login and register cute forms
+- [ ] find how sessions work
 - [ ] using session, create rooms and broadcast to the sessions in the room
