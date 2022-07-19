@@ -4,6 +4,15 @@ import Link from "next/link";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
 import useSocket from "@/hooks/useSocket";
+import { trpc } from "@/utils/trpc";
+import { unstable_getServerSession as getServerSession } from "next-auth/next";
+
+export async function getServerSideProps() {
+  trpc.useQuery(["auth.getSession"])
+  return {
+    props: {},
+  };
+}
 
 const Food: NextPage = () => {
   useEffect(() => {
