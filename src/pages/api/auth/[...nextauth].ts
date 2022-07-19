@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 // Prisma adapter for NextAuth, optional and can be removed
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "../../../server/db/client";
+import { prisma } from "@/server/db/client";
 
 export const authOptions: NextAuthOptions = {
   // Include user.id on session
@@ -29,11 +29,17 @@ export const authOptions: NextAuthOptions = {
         },
       },
       async authorize(credentials, _req) {
-        const user = { id: 1, name: credentials?.name ?? "J Smith" };
+        const user = await prisma.user.findFirst({
+          where: {
+            name: credentials?.name
+          }
+        })
+
+        if (!user) return null;
         return user;
       },
     }),
-  ],
+  ]
 };
 
 export default NextAuth(authOptions);

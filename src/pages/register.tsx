@@ -1,6 +1,6 @@
 import { NextPage } from "next";
 import React from "react";
-import { trpc } from "../utils/trpc";
+import { trpc } from "@/utils/trpc";
 
 interface FormElements extends HTMLFormControlsCollection {
   email: HTMLInputElement;
@@ -12,6 +12,7 @@ interface YourFormElement extends HTMLFormElement {
 }
 
 const Register: NextPage = () => {
+  const registerMutation = trpc.useMutation("auth.register");
   const handleSubmit = async (event: React.FormEvent<YourFormElement>) => {
     event.preventDefault();
 
@@ -20,27 +21,33 @@ const Register: NextPage = () => {
       password: { value: password },
     } = event.currentTarget.elements;
 
-    await trpc.useMutation("register", { email, password_hash });
+    console.log("captured inputs from form:", { email, password });
+    registerMutation.mutate({ email, password });
   };
 
   return (
     <div>
       <div>Join the party!</div>
       <form action="" className="w-1/2" onSubmit={handleSubmit}>
-        <label className="flex gap-2 justify-around">
-          Username
-          <input type="text" id="username" className="border-black border-2" />
-        </label>
-        <label className="flex gap-2 justify-around">
-          Password
-          <input
-            type="password"
-            id="password"
-            className="border-black border-2"
-          />
-        </label>
-        <input type="submit" value="submit" />
+        <fieldset disabled={registerMutation.isLoading}>
+          <label className="flex gap-2 justify-around">
+            Email
+            <input type="text" id="email" className="border-black border-2" />
+          </label>
+          <label className="flex gap-2 justify-around">
+            Password
+            <input
+              type="password"
+              id="password"
+              className="border-black border-2"
+            />
+          </label>
+          <input type="submit" value="submit" />
+        </fieldset>
       </form>
+      {registerMutation.error && (
+        <p>Something went wrong! {JSON.stringify(registerMutation.error)}</p>
+      )}
     </div>
   );
 };

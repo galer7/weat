@@ -1,0 +1,5 @@
+- [ ] find how login and register works in next auth with credentials provider 😕
+  - [x] register -> 3h debugging session because of superjson transformer
+  - [ ] login
+- [ ] find how sessions works
+- [ ] using session, create rooms and broadcast to the sessions in the room
