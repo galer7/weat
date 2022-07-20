@@ -2,7 +2,6 @@
 import * as trpc from "@trpc/server";
 import * as trpcNext from "@trpc/server/adapters/next";
 import { unstable_getServerSession as getServerSession } from "next-auth/next";
-
 import { authOptions as nextAuthOptions } from "@/pages/api/auth/[...nextauth]";
 import { prisma } from "@/server/db/client";
 

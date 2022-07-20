@@ -1,6 +1,7 @@
 import { NextPage } from "next";
 import React from "react";
 import { trpc } from "@/utils/trpc";
+import { useRouter } from "next/router";
 
 interface FormElements extends HTMLFormControlsCollection {
   email: HTMLInputElement;
@@ -12,7 +13,11 @@ interface YourFormElement extends HTMLFormElement {
 }
 
 const Register: NextPage = () => {
-  const registerMutation = trpc.useMutation("auth.register");
+  const router = useRouter();
+
+  const registerMutation = trpc.useMutation("auth.register", {
+    onSuccess: () => router.push("/food"),
+  });
   const handleSubmit = async (event: React.FormEvent<YourFormElement>) => {
     event.preventDefault();
 

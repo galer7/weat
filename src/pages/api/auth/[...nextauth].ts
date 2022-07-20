@@ -3,25 +3,29 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from 'bcrypt';
 
 // Prisma adapter for NextAuth, optional and can be removed
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/server/db/client";
 
 export const authOptions: NextAuthOptions = {
   // Include user.id on session
   callbacks: {
-    session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    session({ session, token }) {
+      console.log({ session, token })
+      if (session?.user) {
+        session.user.id = token.uid as string
       }
       return session;
     },
-    signIn(params) {
-      console.log('SignIn callback:', { params });
-      return true
+    redirect(params) {
+      return `${params.baseUrl}/food`
+    },
+    jwt({ token, user }) {
+      if (user) {
+        // just after login, fresh data. persist data from login in jwt
+        token.uid = user.id;
+      }
+      return token;
     }
   },
-  // Configure one or more authentication providers
-  adapter: PrismaAdapter(prisma),
   providers: [
     // ...add more providers here
     CredentialsProvider({

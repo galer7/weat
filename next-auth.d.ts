@@ -10,3 +10,11 @@ declare module "next-auth" {
     } & DefaultSession["user"];
   }
 }
+
+declare module "next-auth/client" {
+  interface Session {
+    user?: {
+      id?: string;
+    } & DefaultSession["user"];
+  }
+}

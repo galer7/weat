@@ -1,4 +1,3 @@
-import { TRPCError } from "@trpc/server";
 import { createRouter } from "./context";
 import { hash } from 'bcrypt';
 import { prisma } from "@/server/db/client";
@@ -26,7 +25,7 @@ export const authRouter = createRouter()
           data: {
             email,
             password: passwordHash,
-            username: crypto.randomBytes(8).toString("hex")
+            name: crypto.randomBytes(2).toString("hex")
           }
         })
       } catch (error) {
