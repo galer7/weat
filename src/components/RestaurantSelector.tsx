@@ -1,28 +1,35 @@
 import React from "react";
 import FoodSelector from "./FoodSelector";
 
-const RestaurantSelector = ({ index, setState, state }) => {
+const RestaurantSelector = ({
+  index,
+  state,
+  removeRestaurant,
+  changeRestaurant,
+  addFoodItem,
+  removeFoodItem,
+  changeFoodItem,
+}) => {
   return (
-    <div>
+    <div className="border-8 border-rose-500">
       <div>{state[index].name}</div>
-      {state[index].items.map((foodItem, foodIndex) => (
+      <div className="inline">
+        <button onClick={() => changeRestaurant(index, -1)}>{"<"}</button>
+        <button onClick={() => changeRestaurant(index, 1)}>{">"}</button>
+        <button onClick={() => removeRestaurant(index)}>
+          - Restaurant {state[index].name}
+        </button>{" "}
+      </div>
+      {state[index].items.map((_, foodIndex: number) => (
         <FoodSelector
-          key={index}
+          key={foodIndex}
           index={foodIndex}
-          setState={setState}
-          state={state}
+          restaurantIndex={index}
+          removeFoodItem={removeFoodItem}
+          changeFoodItem={changeFoodItem}
         />
       ))}
-      <button
-        className="rounded-full bg-black text-white w-8 h-8"
-        onClick={() => {
-          const tempState = [...state];
-          tempState[index].push();
-          setState([...state, []]);
-        }}
-      >
-        + Food
-      </button>
+      <button onClick={() => addFoodItem(index)}>+ Food</button>
     </div>
   );
 };
