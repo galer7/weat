@@ -20,6 +20,16 @@ How do we know that the client will send correct data to the WS server? I must c
 Saving client work should be emitted only if there exists a room context. If a client has some progress so far and joins a room, the WS server should emit to all other sockets in that room the progress of the current client, and vice-versa.
 The initial dump should aggregate all changes so far from all other participants. Future changes will be announced per change per client.
 
+# Main picker logic
+## Restaurant picker
+- should have a selected array, in which we push/remove/change restaurants
+- when pushing a new restaurant, we can also push a first item in its `items` array, so that we have better UI
+
+## Restaurant food item picker
+- should render selected `items` array
+- should have possibility of changing selected `items` array by mutating existing items + pushing to this selected `items` array
+
+---
 # Links
 1. use ref for modal show/hide: https://stackoverflow.com/questions/33796267/how-to-use-refs-in-react-with-typescript
 2. https://stackoverflow.com/questions/61102101/cannot-assign-refobjecthtmldivelement-to-refobjecthtmlelement-instance
