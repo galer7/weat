@@ -9,6 +9,7 @@ import { authOptions as nextAuthOptions } from "@/pages/api/auth/[...nextauth]";
 import { trpc } from "@/utils/trpc";
 import type { GetServerSidePropsContext } from "next";
 import { User } from "@prisma/client";
+import MainSelector from "@/components/MainSelector";
 
 type FoodProps = {
   users: User[];
@@ -55,14 +56,14 @@ interface InviteForm extends HTMLFormElement {
 const Food: NextPage = ({
   users: sessionUsers,
   name: currentName,
-}: FoodProps) => {
-  useEffect(() => {
-    // Update the document title using the browser API
-    navigator.geolocation.getCurrentPosition(function (position) {
-      console.log("Latitude is :", position.coords.latitude);
-      console.log("Longitude is :", position.coords.longitude);
-    });
-  }, []);
+}: FoodProps | Record<string, never>) => {
+  // useEffect(() => {
+  //   // Update the document title using the browser API
+  //   navigator.geolocation.getCurrentPosition(function (position) {
+  //     console.log("Latitude is :", position.coords.latitude);
+  //     console.log("Longitude is :", position.coords.longitude);
+  //   });
+  // }, []);
 
   const handleInviteSubmit = async (event: React.FormEvent<InviteForm>) => {
     event.preventDefault();
@@ -82,14 +83,9 @@ const Food: NextPage = ({
     );
   };
 
-  const makeFoodCarousel = (key: number) => (
-    <div key={key}>food selector {key}</div>
-  );
-  const [foodSelectors, setFoodSelectors] = useState([makeFoodCarousel(0)]);
   const { ref, isComponentVisible, setIsComponentVisible } =
     useComponentVisible<HTMLDivElement>(false);
-  useSocket();
-
+  useSocket(currentName);
   const inviteMutation = trpc.useMutation("food.invite");
 
   return (
@@ -107,76 +103,60 @@ const Food: NextPage = ({
       <div>{JSON.stringify(sessionUsers)}</div>
       {/* FLEX WITH YOUR FRIENDS */}
       <div className="flex gap-2 justify-evenly">
-        {sessionUsers.map(({ name }, index) => (
-          <div
-            className={`m-8 ${name === "you" && "border-red-600 border-2"}`}
-            key={index}
-          >
-            <div className="m-4">{name}</div>
-            <div>restaurant selector</div>
-            {foodSelectors.map((elem, selectorIndex) => {
-              if (selectorIndex > 0 && name === currentName) {
-                return (
-                  <div className="flex justify-center" key={selectorIndex}>
-                    {elem}
-                    <button
-                      className="rounded-full bg-black text-white w-8 h-8"
-                      onClick={() =>
-                        setFoodSelectors(
-                          foodSelectors.filter((_, i) => i !== selectorIndex)
-                        )
-                      }
-                    >
-                      -
-                    </button>
-                  </div>
-                );
-              }
-              return elem;
-            })}
-            {name === currentName && (
-              <button
-                className="rounded-full bg-black text-white w-8 h-8"
-                onClick={() =>
-                  setFoodSelectors([
-                    ...foodSelectors,
-                    makeFoodCarousel(foodSelectors.length),
-                  ])
-                }
-              >
-                +
-              </button>
-            )}
-            <hr className="bg-black h-1" />
-            <div>total: </div>
-            {name === currentName && (
-              <div ref={ref}>
-                {isComponentVisible && (
-                  <Modal>
-                    <div>Invite a friend</div>
-                    <form
-                      action=""
-                      className="w-1/2"
-                      onSubmit={handleInviteSubmit}
-                    >
-                      <fieldset disabled={inviteMutation.isLoading}>
-                        <label className="flex gap-2 justify-around">
-                          Username
-                          <input
-                            type="text"
-                            id="username"
-                            className="border-black border-2"
-                          />
-                        </label>
-                        <input type="submit" value="submit" />
-                      </fieldset>
-                    </form>
-                  </Modal>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+        {sessionUsers.map(({ name }, index) => {
+          const isCurrentUser = name === currentName;
+          return (
+            <div
+              className={`m-8 ${isCurrentUser && "border-red-600 border-2"}`}
+              key={index}
+            >
+              <div className="m-4">{name}</div>
+              <MainSelector
+                restaurants={[
+                  {
+                    name: "1",
+                    items: [
+                      { name: "sushi", price: 12.12 },
+                      { name: "sushi2", price: 122.122 },
+                    ],
+                  },
+                  { name: "2", items: [{ name: "burger", price: 23.23 }] },
+                  { name: "3", items: [{ name: "sandwich", price: 34.34 }] },
+                  { name: "4", items: [{ name: "coffee", price: 45.45 }] },
+                ]}
+                name={name}
+                currentName={currentName}
+              />
+              {/* MODAL FOR INVITE */}
+              {isCurrentUser && (
+                <div ref={ref}>
+                  {isComponentVisible && (
+                    <Modal>
+                      <div>Invite a friend</div>
+                      <form
+                        action=""
+                        className="w-1/2"
+                        onSubmit={handleInviteSubmit}
+                      >
+                        <fieldset disabled={inviteMutation.isLoading}>
+                          <label className="flex gap-2 justify-around">
+                            Username
+                            <input
+                              type="text"
+                              id="username"
+                              className="border-black border-2"
+                            />
+                          </label>
+                          <input type="submit" value="submit" />
+                        </fieldset>
+                      </form>
+                    </Modal>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -4,8 +4,10 @@ import { authRouter } from "./auth";
 import { foodRouter } from "./food";
 import { usersRouter } from "./users";
 import { TRPCError } from "@trpc/server";
+import superjson from 'superjson'
 
 export const appRouter = createRouter()
+  .transformer(superjson)
   .merge("auth.", authRouter)
   .middleware(async ({ ctx, next }) => {
     // Any queries or mutations after this middleware will

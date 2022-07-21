@@ -1,5 +1,4 @@
 import { useState } from "react";
-import RestaurantSelector from "./RestaurantSelector";
 
 type FoodItem = {
   name: string;
@@ -21,10 +20,19 @@ type SelectedRestaurant = {
   originalIndex: number;
 };
 
-const MainSelector = ({ restaurants }: { restaurants: Restaurant[] }) => {
+const MainSelector = ({
+  restaurants,
+  name,
+  currentName,
+}: {
+  restaurants: Restaurant[];
+  name: string;
+  currentName: string;
+}) => {
   // TODO: use a Proxy on the restaurants array so that we can
   // better determine next available restaurants and/or item for a restaurant
   const [state, setState] = useState<SelectedRestaurant[]>([]);
+  const isCurrentUser = name === currentName;
 
   const addRestaurant = () => {
     if (state.length === restaurants.length) return;
@@ -48,9 +56,9 @@ const MainSelector = ({ restaurants }: { restaurants: Restaurant[] }) => {
   };
 
   const changeRestaurant = (index: number, delta: -1 | 1) => {
-    let rawNewIndex = index + delta;
-    if (rawNewIndex < 0) rawNewIndex = state.length - 1;
-    if (rawNewIndex === state.length) rawNewIndex = 0;
+    let rawNewIndex = (state[index]?.originalIndex as number) + delta;
+    if (rawNewIndex < 0) rawNewIndex = restaurants.length - 1;
+    if (rawNewIndex === restaurants.length) rawNewIndex = 0;
 
     const tmpState = [...state];
     tmpState.splice(index, 1, {
@@ -90,8 +98,18 @@ const MainSelector = ({ restaurants }: { restaurants: Restaurant[] }) => {
     let rawNewFoodItemIndex =
       ((state[restaurantIndex] as SelectedRestaurant).items[foodItemIndex]
         ?.originalIndex as number) + delta;
-    if (rawNewFoodItemIndex < 0) rawNewFoodItemIndex = state.length - 1;
-    if (rawNewFoodItemIndex === state.length) rawNewFoodItemIndex = 0;
+    const originalRestaurantItems =
+      restaurants[(state[restaurantIndex] as SelectedRestaurant).originalIndex]
+        ?.items;
+    if (rawNewFoodItemIndex < 0)
+      rawNewFoodItemIndex = (originalRestaurantItems?.length as number) - 1;
+    if (rawNewFoodItemIndex === originalRestaurantItems?.length)
+      rawNewFoodItemIndex = 0;
+
+    console.log({
+      foodItemIndex,
+      rawNewFoodItemIndex,
+    });
 
     const tmpState = [...state];
     (tmpState[restaurantIndex] as SelectedRestaurant).items.splice(
@@ -109,24 +127,73 @@ const MainSelector = ({ restaurants }: { restaurants: Restaurant[] }) => {
   return (
     <div>
       <div>Pick your food!</div>
-      {state.map((restaurant, index) => (
-        <RestaurantSelector
-          key={index}
-          index={index}
-          state={state}
-          removeRestaurant={removeRestaurant}
-          changeRestaurant={changeRestaurant}
-          addFoodItem={addFoodItem}
-          removeFoodItem={removeFoodItem}
-          changeFoodItem={changeFoodItem}
-        />
+      {state.map((restaurant, restaurantIndex) => (
+        <div className="border-8 border-rose-500" key={restaurantIndex}>
+          <div>{state[restaurantIndex]?.name}</div>
+          <div className="inline">
+            {isCurrentUser && (
+              <button onClick={() => changeRestaurant(restaurantIndex, -1)}>
+                {"<"}
+              </button>
+            )}
+            {isCurrentUser && (
+              <button onClick={() => changeRestaurant(restaurantIndex, 1)}>
+                {">"}
+              </button>
+            )}
+            {isCurrentUser && (
+              <button onClick={() => removeRestaurant(restaurantIndex)}>
+                - Restaurant {restaurant.name}
+              </button>
+            )}
+          </div>
+          {state[restaurantIndex]?.items.map((food, foodIndex: number) => (
+            <div key={foodIndex}>
+              <div>
+                {food.name} ${food.price.toFixed(2)}
+              </div>
+              <div className="inline">
+                {isCurrentUser && (
+                  <button
+                    onClick={() =>
+                      changeFoodItem(restaurantIndex, foodIndex, -1)
+                    }
+                  >
+                    {"<"}
+                  </button>
+                )}
+                {isCurrentUser && (
+                  <button
+                    onClick={() =>
+                      changeFoodItem(restaurantIndex, foodIndex, 1)
+                    }
+                  >
+                    {">"}
+                  </button>
+                )}
+                {isCurrentUser && (
+                  <button
+                    onClick={() => removeFoodItem(restaurantIndex, foodIndex)}
+                  >
+                    - Food {food.name}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {isCurrentUser && (
+            <button onClick={() => addFoodItem(restaurantIndex)}>+ Food</button>
+          )}
+        </div>
       ))}
-      <button
-        className="rounded-full bg-black text-white w-8 h-8"
-        onClick={() => addRestaurant()}
-      >
-        + Restaurant
-      </button>
+      {isCurrentUser && (
+        <button
+          className="rounded-md bg-black text-blue-600 p-2 h-8 text-center"
+          onClick={() => addRestaurant()}
+        >
+          + Restaurant
+        </button>
+      )}
     </div>
   );
 };

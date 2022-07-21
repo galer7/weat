@@ -3,6 +3,7 @@ import type { AppProps } from "next/app";
 import { withTRPC } from "@trpc/next";
 import type { AppRouter } from "@/server/router";
 import { SessionProvider } from "next-auth/react";
+import superjson from "superjson";
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
@@ -29,6 +30,7 @@ export default withTRPC<AppRouter>({
 
     return {
       url,
+      transformer: superjson,
       /**
        * @link https://react-query.tanstack.com/reference/QueryClient
        */
