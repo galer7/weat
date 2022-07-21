@@ -18,17 +18,27 @@ export const foodRouter = createRouter()
           return;
         }
 
+        if (foundUser.foodieGroupId) {
+          console.log(`user ${invitedName} is in another foodie group`)
+          return;
+        }
+
         // Check for re-invite logic
         const currentUser = await prisma.user.findFirst({ where: { id: session?.user?.id } })
+        let desiredFoodieGroupId;
 
         // If the foodie group doesn't exist, create it
         if (!currentUser?.foodieGroupId) {
           const newFoodieGroup = await prisma.foodieGroup.create({ data: {} });
-          await prisma.user.update({
-            where: { id: session?.user?.id },
-            data: { foodieGroupId: newFoodieGroup.id }
-          })
+          desiredFoodieGroupId = newFoodieGroup.id;
+        } else {
+          desiredFoodieGroupId = currentUser.foodieGroupId
         }
+
+        await prisma.user.update({
+          where: { name: invitedName },
+          data: { foodieGroupId: desiredFoodieGroupId }
+        })
 
         // TODO: send invite to `name` on websocket
       } catch (error) {

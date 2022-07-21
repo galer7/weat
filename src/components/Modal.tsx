@@ -1,7 +1,11 @@
 import React from "react";
 
-const Modal: React.FC = () => {
-  return <div>{"I'm a modal!"}</div>;
+const Modal = ({ children }) => {
+  return (
+    <div className="fixed w-1/2 h-1/2 top-0 left-0 z-10 bg-sky-700">
+      {children}
+    </div>
+  );
 };
 
 export default Modal;

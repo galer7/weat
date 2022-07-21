@@ -23,7 +23,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     nextAuthOptions
   );
 
-  console.log({ session });
   if (session) {
     // Find if that user has any foodie group associated
     const foundUser = await prisma.user.findUnique({
@@ -45,6 +44,14 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   };
 }
 
+interface InviteFormFields extends HTMLFormControlsCollection {
+  username: HTMLInputElement;
+}
+
+interface InviteForm extends HTMLFormElement {
+  readonly elements: InviteFormFields;
+}
+
 const Food: NextPage = ({
   users: sessionUsers,
   name: currentName,
@@ -57,6 +64,24 @@ const Food: NextPage = ({
     });
   }, []);
 
+  const handleInviteSubmit = async (event: React.FormEvent<InviteForm>) => {
+    event.preventDefault();
+
+    const {
+      username: { value: username },
+    } = event.currentTarget.elements;
+
+    console.log("captured inputs from INVITE form:", { username });
+    inviteMutation.mutate(
+      { invitedName: username, currentName },
+      {
+        onSuccess() {
+          setIsComponentVisible(false);
+        },
+      }
+    );
+  };
+
   const makeFoodCarousel = (key: number) => (
     <div key={key}>food selector {key}</div>
   );
@@ -67,24 +92,13 @@ const Food: NextPage = ({
 
   const inviteMutation = trpc.useMutation("food.invite");
 
-  const users = [
-    { name: "you" },
-    {
-      name: "your friend",
-    },
-  ];
-
   return (
     <div>
       {/* HEADER */}
       <div className="bg-black w-full flex justify-between">
         <div className="text-white p-8 px-10 text-xl font-bold">WEAT</div>
         <div className="text-white p-8 px-10 text-xl font-bold">
-          <button
-            onClick={() =>
-              inviteMutation.mutate({ invitedName: "4b07", currentName })
-            }
-          >
+          <button onClick={() => setIsComponentVisible(!isComponentVisible)}>
             INVITE
           </button>
         </div>
@@ -93,7 +107,7 @@ const Food: NextPage = ({
       <div>{JSON.stringify(sessionUsers)}</div>
       {/* FLEX WITH YOUR FRIENDS */}
       <div className="flex gap-2 justify-evenly">
-        {users.map(({ name }, index) => (
+        {sessionUsers.map(({ name }, index) => (
           <div
             className={`m-8 ${name === "you" && "border-red-600 border-2"}`}
             key={index}
@@ -101,7 +115,7 @@ const Food: NextPage = ({
             <div className="m-4">{name}</div>
             <div>restaurant selector</div>
             {foodSelectors.map((elem, selectorIndex) => {
-              if (selectorIndex > 0 && name === "you") {
+              if (selectorIndex > 0 && name === currentName) {
                 return (
                   <div className="flex justify-center" key={selectorIndex}>
                     {elem}
@@ -120,7 +134,7 @@ const Food: NextPage = ({
               }
               return elem;
             })}
-            {name === "you" && (
+            {name === currentName && (
               <button
                 className="rounded-full bg-black text-white w-8 h-8"
                 onClick={() =>
@@ -135,8 +149,31 @@ const Food: NextPage = ({
             )}
             <hr className="bg-black h-1" />
             <div>total: </div>
-            {name === "you" && (
-              <div ref={ref}>{isComponentVisible && <Modal />}</div>
+            {name === currentName && (
+              <div ref={ref}>
+                {isComponentVisible && (
+                  <Modal>
+                    <div>Invite a friend</div>
+                    <form
+                      action=""
+                      className="w-1/2"
+                      onSubmit={handleInviteSubmit}
+                    >
+                      <fieldset disabled={inviteMutation.isLoading}>
+                        <label className="flex gap-2 justify-around">
+                          Username
+                          <input
+                            type="text"
+                            id="username"
+                            className="border-black border-2"
+                          />
+                        </label>
+                        <input type="submit" value="submit" />
+                      </fieldset>
+                    </form>
+                  </Modal>
+                )}
+              </div>
             )}
           </div>
         ))}

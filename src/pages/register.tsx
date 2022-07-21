@@ -3,13 +3,13 @@ import React from "react";
 import { trpc } from "@/utils/trpc";
 import { useRouter } from "next/router";
 
-interface FormElements extends HTMLFormControlsCollection {
+interface RegisterFormFields extends HTMLFormControlsCollection {
   email: HTMLInputElement;
   password: HTMLInputElement;
 }
 
-interface YourFormElement extends HTMLFormElement {
-  readonly elements: FormElements;
+interface RegisterForm extends HTMLFormElement {
+  readonly elements: RegisterFormFields;
 }
 
 const Register: NextPage = () => {
@@ -18,7 +18,8 @@ const Register: NextPage = () => {
   const registerMutation = trpc.useMutation("auth.register", {
     onSuccess: () => router.push("/food"),
   });
-  const handleSubmit = async (event: React.FormEvent<YourFormElement>) => {
+
+  const handleRegisterSubmit = async (event: React.FormEvent<RegisterForm>) => {
     event.preventDefault();
 
     const {
@@ -26,14 +27,14 @@ const Register: NextPage = () => {
       password: { value: password },
     } = event.currentTarget.elements;
 
-    console.log("captured inputs from form:", { email, password });
+    console.log("captured inputs from REGISTER form:", { email, password });
     registerMutation.mutate({ email, password });
   };
 
   return (
     <div>
       <div>Join the party!</div>
-      <form action="" className="w-1/2" onSubmit={handleSubmit}>
+      <form action="" className="w-1/2" onSubmit={handleRegisterSubmit}>
         <fieldset disabled={registerMutation.isLoading}>
           <label className="flex gap-2 justify-around">
             Email
