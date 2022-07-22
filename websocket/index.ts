@@ -9,6 +9,12 @@ const io = new Server(3001, {
 const m = new Map();
 // TODO: treat reconnect logic
 
+// io.on("user:first:render", (socket: Socket) => {
+//   socket.emit("server:first:render", {
+//     state: superjson.stringify(foodieGroupMap),
+//   });
+// });
+
 io.on(
   "user:invite:sent",
   (
@@ -17,18 +23,30 @@ io.on(
       from,
       to,
       foodieGroupId,
-    }: { from: string; to: string; foodieGroupId: string }
+      fromUserState,
+    }: {
+      from: string;
+      to: string;
+      foodieGroupId: string;
+      fromUserState: object;
+    }
   ) => {
     // create room on first group invite sent
-    socket.emit("server:invite:sent", { to, foodieGroupId });
+    socket.emit("server:invite:sent", { from, to, foodieGroupId });
     socket.join(foodieGroupId);
-    m.set(
-      foodieGroupId,
-      new Map([
-        [from, {}],
-        [to, {}],
-      ])
-    );
+
+    // if it is the first invite, the sender sends its user state also
+    if (!m.has(foodieGroupId)) {
+      m.set(
+        foodieGroupId,
+        new Map([
+          [from, fromUserState],
+          [to, {}],
+        ])
+      );
+    } else {
+      m.set(foodieGroupId, new Map([[to, {}]]));
+    }
   }
 );
 
@@ -53,7 +71,8 @@ io.on(
     foodieGroupMap.set(name, userState);
 
     socket.to(foodieGroupId).emit("server:state:updated", {
-      state: superjson.stringify(foodieGroupMap),
+      state: superjson.stringify(foodieGroupMap.get(name)),
+      name,
     });
   }
 );
@@ -69,7 +88,8 @@ io.on(
     foodieGroupMap.set(name, userState);
 
     socket.to(foodieGroupId).emit("server:state:updated", {
-      state: superjson.stringify(foodieGroupMap),
+      state: superjson.stringify(foodieGroupMap.get(name)),
+      name,
     });
   }
 );

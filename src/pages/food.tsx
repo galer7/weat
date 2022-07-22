@@ -5,11 +5,11 @@ import { prisma } from "@/server/db/client";
 import { unstable_getServerSession as getServerSession } from "next-auth/next";
 import { authOptions as nextAuthOptions } from "@/pages/api/auth/[...nextauth]";
 import { trpc } from "@/utils/trpc";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { GetServerSidePropsContext } from "next";
 import { User } from "@prisma/client";
 import MainSelector from "@/components/MainSelector";
-import useSocket from "@/hooks/useSocket";
+import { io, Socket } from "socket.io-client";
 
 type FoodProps = {
   users: User[];
@@ -55,6 +55,8 @@ interface InviteForm extends HTMLFormElement {
   readonly elements: InviteFormFields;
 }
 
+const socket = io("ws://localhost:3001");
+
 const Food: NextPage = ({
   users: serverSideUsers,
   name: currentName,
@@ -67,6 +69,17 @@ const Food: NextPage = ({
   //     console.log("Longitude is :", position.coords.longitude);
   //   });
   // }, []);
+
+  const [groupUsers, setGroupUsers] = useState<User[]>(serverSideUsers);
+  const [groupState, setGroupState] = useState(
+    groupUsers.reduce((acc, user) => {
+      acc[user.name] = [];
+      return acc;
+    }, {} as Record<string, any>)
+  );
+  const [groupInvitations, setGroupInvitations] = useState<
+    Array<{ from: string; foodieGroupId: string; to: string }>
+  >([]);
 
   const handleInviteSubmit = async (event: React.FormEvent<InviteForm>) => {
     event.preventDefault();
@@ -84,29 +97,34 @@ const Food: NextPage = ({
         },
       }
     );
+
+    // add to groupState as empty object
+    const tmpState = { ...groupState };
+    tmpState[username] = [];
+    setGroupState(tmpState);
   };
 
-  const socket = useSocket(currentName, state, setState);
-  const [groupUsers, setGroupUsers] = useState<User[]>(serverSideUsers);
-  const [groupState, setGroupState] = useState(
-    groupUsers.reduce((acc, user) => {
-      acc[user.name] = [];
-      return acc;
-    }, {} as Record<string, any>)
-  );
+  useEffect(() => {
+    socket.on("server:invite:sent", ({ from, to, foodieGroupId }) => {
+      if (currentUser.foodieGroupId !== foodieGroupId) return;
 
-  socket.on("server:invite:sent", ({ to, foodieGroupId }) => {
-    if (currentUser.foodieGroupId !== foodieGroupId) return;
+      if (to === currentUser.name) {
+        setGroupInvitations([...groupInvitations, { from, to, foodieGroupId }]);
+      } else {
+        // TODO: render pending invite accept animation
+      }
+    });
 
-    if (to === currentUser.name) {
-      // TODO: show popup + emit on accept
-    } else {
-      // TODO: render pending invite accept animation
-    }
-  });
+    socket.on("server:state:updated", ({ state, name }) => {
+      const tmpState = { ...groupState };
+      tmpState[name] = state;
+      setGroupState(tmpState);
+    });
 
-  socket.on("server:state:updated", ({ state }) => {
-    setGroupState(state);
+    return () => {
+      socket.off("server:invite:sent");
+      socket.off("server:state:updated");
+    };
   });
 
   const { ref, isComponentVisible, setIsComponentVisible } =
@@ -185,6 +203,28 @@ const Food: NextPage = ({
           );
         })}
       </div>
+      {/* INVITE POPUP */}
+      {groupInvitations.map(({ from, foodieGroupId, to }, index) => {
+        return (
+          <div key={index}>
+            <div>Invite received from {from}</div>
+            <button
+              onClick={() => {
+                socket.emit("user:invite:accepted", {
+                  name: to,
+                  foodieGroupId,
+                  userState: groupState[to],
+                });
+
+                // delete all pending invitations after accepting one
+                setGroupInvitations([]);
+              }}
+            >
+              Accept
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 };

@@ -30,34 +30,32 @@ const MainSelector = ({
   restaurants: Restaurant[];
   name: string;
   currentName: string;
-  groupState: any;
+  groupState: Record<string, SelectedRestaurant[]>;
   setGroupState: any;
 }) => {
   // TODO: use a Proxy on the restaurants array so that we can
   // better determine next available restaurants and/or item for a restaurant
   const isCurrentUser = name === currentName;
-  const state = groupState[currentName];
+  const tmpState = { ...groupState };
+  const state = tmpState[currentName] as SelectedRestaurant[];
+  console.log(state);
 
   const addRestaurant = () => {
     if (state.length === restaurants.length) return;
-    const tmpState = { ...groupState };
+    state.push({
+      name: restaurants[state.length]?.name,
+      items: [restaurants[state.length]?.items[0]],
+      originalIndex: state.length,
+    } as SelectedRestaurant);
 
-    setGroupState({
-      ...tmpState,
-      [currentName]: {
-        name: restaurants[state.length]?.name,
-        items: [restaurants[state.length]?.items[0]],
-        originalIndex: state.length,
-      } as SelectedRestaurant,
-    });
+    setGroupState(state);
   };
 
   const removeRestaurant = (index: number) => {
     if (index < 0 || index > state.length - 1) return;
 
-    const tmpState = [...state];
-    tmpState.splice(index, 1);
-    setState(tmpState);
+    state.splice(index, 1);
+    setGroupState(state);
   };
 
   const changeRestaurant = (index: number, delta: -1 | 1) => {
@@ -65,8 +63,7 @@ const MainSelector = ({
     if (rawNewIndex < 0) rawNewIndex = restaurants.length - 1;
     if (rawNewIndex === restaurants.length) rawNewIndex = 0;
 
-    const tmpState = [...state];
-    tmpState.splice(index, 1, {
+    state.splice(index, 1, {
       name: restaurants[rawNewIndex]?.name as string,
       items: [
         {
@@ -77,22 +74,22 @@ const MainSelector = ({
       originalIndex: rawNewIndex,
     });
 
-    setState(tmpState);
+    setGroupState(state);
   };
 
   const addFoodItem = (restaurantIndex: number) => {
-    const tmpState = [...state];
-    tmpState[restaurantIndex]?.items.push({
+    state[restaurantIndex]?.items.push({
       ...restaurants[restaurantIndex]?.items[0],
       originalIndex: 0,
     } as SelectedFoodItem);
-    setState(tmpState);
+
+    setGroupState(state);
   };
 
   const removeFoodItem = (restaurantIndex: number, foodItemIndex: number) => {
-    const tmpState = [...state];
-    tmpState[restaurantIndex]?.items.splice(foodItemIndex, 1);
-    setState(tmpState);
+    state[restaurantIndex]?.items.splice(foodItemIndex, 1);
+
+    setGroupState(state);
   };
 
   const changeFoodItem = (
@@ -111,8 +108,8 @@ const MainSelector = ({
     if (rawNewFoodItemIndex === originalRestaurantItems?.length)
       rawNewFoodItemIndex = 0;
 
-    const tmpState = [...state];
-    (tmpState[restaurantIndex] as SelectedRestaurant).items.splice(
+    const tmpState = { ...state };
+    (state[restaurantIndex] as SelectedRestaurant).items.splice(
       foodItemIndex,
       1,
       {
@@ -121,7 +118,7 @@ const MainSelector = ({
       } as SelectedFoodItem
     );
 
-    setState(tmpState);
+    setGroupState(tmpState);
   };
 
   return (

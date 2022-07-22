@@ -32,8 +32,8 @@ The initial dump should aggregate all changes so far from all other participants
 # Websocket flows
 ## Invite flow
 1. press send invite button
-2. emit `user:invite:sent` to server
-3. ws server on `user:invite:sent` create map entry with `{ foodieGroupId: { [from]: {}, [to]: {} } }`
+2. emit `user:invite:sent` to server. attach to this emit the state of the inviter
+3. ws server on `user:invite:sent` create map entry with `{ foodieGroupId: { [from]: initial_sender_state, [to]: {} } }`
 4. meanwhile, `[from]` can send as many `user:state:updated` as he wants
 5. ws server emits `server:invite:sent`: 2 things happen:
    1. inviter listens for this event, and then renders animation
