@@ -2,5 +2,8 @@
     "compilerOptions": {
         "esModuleInterop": true,
         "module": "CommonJS"
-   }
+    },
+    "ts-node": {
+        "swc": true
+    }
 }

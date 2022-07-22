@@ -1,21 +1,26 @@
 import { useEffect } from "react";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
-const makeEventHandlers = (foodieGroupState: any, setFoodieGroupState: any): Record<string, (...args: any) => void> => {
+const makeEventHandlers = (currentName: string, state: any, setState: any, socket: Socket): Record<string, (...args: any) => void> => {
   return {
-    "tx:invite:sent": (name, foodieGroupId) => {
+    "tx:invite:sent": async (name, foodieGroupId) => {
+      if (name === currentName) {
+        
+      }
+    },
+    "tx:invite:accepted": (name, foodieGroupId, newUserState) => {
       return // TODO
     },
-    "tx:invite:accepted": (name, foodieGroupId) => {
-      return // TODO
-    },
+    "tx:food:updated": (name, foodieGroupId, statePatch) => {
+      return;
+    }
   }
 }
 
 const socket = io("ws://localhost:3001");
 
-export default function useSocket(foodieGroupState: any, setFoodieGroupState: any) {
-  const eventHandlers = makeEventHandlers(foodieGroupState, setFoodieGroupState);
+export default function useSocket(currentName: string, state: any, setState: any) {
+  const eventHandlers = makeEventHandlers(currentName, state, setState, socket);
   useEffect(() => {
     Object.entries(eventHandlers).forEach(([event, cb]) => {
       socket.on(event, cb)

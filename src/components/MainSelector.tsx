@@ -24,27 +24,32 @@ const MainSelector = ({
   restaurants,
   name,
   currentName,
+  groupState,
+  setGroupState,
 }: {
   restaurants: Restaurant[];
   name: string;
   currentName: string;
+  groupState: any;
+  setGroupState: any;
 }) => {
   // TODO: use a Proxy on the restaurants array so that we can
   // better determine next available restaurants and/or item for a restaurant
-  const [state, setState] = useState<SelectedRestaurant[]>([]);
   const isCurrentUser = name === currentName;
+  const state = groupState[currentName];
 
   const addRestaurant = () => {
     if (state.length === restaurants.length) return;
+    const tmpState = { ...groupState };
 
-    setState([
-      ...state,
-      {
+    setGroupState({
+      ...tmpState,
+      [currentName]: {
         name: restaurants[state.length]?.name,
         items: [restaurants[state.length]?.items[0]],
         originalIndex: state.length,
       } as SelectedRestaurant,
-    ]);
+    });
   };
 
   const removeRestaurant = (index: number) => {
@@ -105,11 +110,6 @@ const MainSelector = ({
       rawNewFoodItemIndex = (originalRestaurantItems?.length as number) - 1;
     if (rawNewFoodItemIndex === originalRestaurantItems?.length)
       rawNewFoodItemIndex = 0;
-
-    console.log({
-      foodItemIndex,
-      rawNewFoodItemIndex,
-    });
 
     const tmpState = [...state];
     (tmpState[restaurantIndex] as SelectedRestaurant).items.splice(

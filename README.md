@@ -29,6 +29,19 @@ The initial dump should aggregate all changes so far from all other participants
 - should render selected `items` array
 - should have possibility of changing selected `items` array by mutating existing items + pushing to this selected `items` array
 
+# Websocket flows
+## Invite flow
+1. press send invite button
+2. emit `user:invite:sent` to server
+3. ws server on `user:invite:sent` create map entry with `{ foodieGroupId: { [from]: {}, [to]: {} } }`
+4. meanwhile, `[from]` can send as many `user:state:updated` as he wants
+5. ws server emits `server:invite:sent`: 2 things happen:
+   1. inviter listens for this event, and then renders animation
+   2. invited will accept invitation and will emit `user:invite:accepted`
+6. ws server on `user:invite:accepted` will receive invited user state. ws server updates state with this new user state
+7. ws server emits `server:state:updated` to all participants in the room
+8. 
+
 ---
 # Links
 1. use ref for modal show/hide: https://stackoverflow.com/questions/33796267/how-to-use-refs-in-react-with-typescript

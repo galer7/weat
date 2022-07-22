@@ -1,19 +1,20 @@
 import type { NextPage } from "next";
-import { useEffect, useState } from "react";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
-import useSocket from "@/hooks/useSocket";
 import { prisma } from "@/server/db/client";
 import { unstable_getServerSession as getServerSession } from "next-auth/next";
 import { authOptions as nextAuthOptions } from "@/pages/api/auth/[...nextauth]";
 import { trpc } from "@/utils/trpc";
+import { useState } from "react";
 import type { GetServerSidePropsContext } from "next";
 import { User } from "@prisma/client";
 import MainSelector from "@/components/MainSelector";
+import useSocket from "@/hooks/useSocket";
 
 type FoodProps = {
   users: User[];
   name: string;
+  currentUser: User;
 };
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
@@ -36,6 +37,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       props: {
         users,
         name: session.user?.name || null,
+        currentUser: session.user,
       },
     };
   }
@@ -54,8 +56,9 @@ interface InviteForm extends HTMLFormElement {
 }
 
 const Food: NextPage = ({
-  users: sessionUsers,
+  users: serverSideUsers,
   name: currentName,
+  currentUser,
 }: FoodProps | Record<string, never>) => {
   // useEffect(() => {
   //   // Update the document title using the browser API
@@ -83,9 +86,31 @@ const Food: NextPage = ({
     );
   };
 
+  const socket = useSocket(currentName, state, setState);
+  const [groupUsers, setGroupUsers] = useState<User[]>(serverSideUsers);
+  const [groupState, setGroupState] = useState(
+    groupUsers.reduce((acc, user) => {
+      acc[user.name] = [];
+      return acc;
+    }, {} as Record<string, any>)
+  );
+
+  socket.on("server:invite:sent", ({ to, foodieGroupId }) => {
+    if (currentUser.foodieGroupId !== foodieGroupId) return;
+
+    if (to === currentUser.name) {
+      // TODO: show popup + emit on accept
+    } else {
+      // TODO: render pending invite accept animation
+    }
+  });
+
+  socket.on("server:state:updated", ({ state }) => {
+    setGroupState(state);
+  });
+
   const { ref, isComponentVisible, setIsComponentVisible } =
     useComponentVisible<HTMLDivElement>(false);
-  useSocket(currentName);
   const inviteMutation = trpc.useMutation("food.invite");
 
   return (
@@ -100,10 +125,10 @@ const Food: NextPage = ({
         </div>
       </div>
 
-      <div>{JSON.stringify(sessionUsers)}</div>
+      <div>{JSON.stringify(serverSideUsers)}</div>
       {/* FLEX WITH YOUR FRIENDS */}
       <div className="flex gap-2 justify-evenly">
-        {sessionUsers.map(({ name }, index) => {
+        {serverSideUsers.map(({ name }, index) => {
           const isCurrentUser = name === currentName;
           return (
             <div
@@ -126,6 +151,8 @@ const Food: NextPage = ({
                 ]}
                 name={name}
                 currentName={currentName}
+                groupState={groupState}
+                setGroupState={setGroupState}
               />
               {/* MODAL FOR INVITE */}
               {isCurrentUser && (
