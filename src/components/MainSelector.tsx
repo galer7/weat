@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 type FoodItem = {
   name: string;
   price: number;
@@ -23,73 +21,103 @@ type SelectedRestaurant = {
 const MainSelector = ({
   restaurants,
   name,
-  currentName,
+  loggedInName,
   groupState,
   setGroupState,
 }: {
   restaurants: Restaurant[];
   name: string;
-  currentName: string;
+  loggedInName: string;
   groupState: Record<string, SelectedRestaurant[]>;
   setGroupState: any;
 }) => {
   // TODO: use a Proxy on the restaurants array so that we can
   // better determine next available restaurants and/or item for a restaurant
-  const isCurrentUser = name === currentName;
-  const tmpState = { ...groupState };
-  const state = tmpState[currentName] as SelectedRestaurant[];
-  console.log(state);
+  const isCurrentUser = name === loggedInName;
 
   const addRestaurant = () => {
-    if (state.length === restaurants.length) return;
-    state.push({
-      name: restaurants[state.length]?.name,
-      items: [restaurants[state.length]?.items[0]],
-      originalIndex: state.length,
-    } as SelectedRestaurant);
+    if (groupState[name].length === restaurants.length) return;
 
-    setGroupState(state);
+    setGroupState({
+      ...groupState,
+      [name]: [
+        ...groupState[name],
+        {
+          name: restaurants[groupState[name].length]?.name,
+          items: [
+            {
+              ...restaurants[groupState[name].length]?.items[0],
+              originalIndex: 0,
+            },
+          ],
+          originalIndex: groupState[name].length,
+        },
+      ],
+    });
   };
 
   const removeRestaurant = (index: number) => {
-    if (index < 0 || index > state.length - 1) return;
-
-    state.splice(index, 1);
-    setGroupState(state);
+    if (index < 0 || index > groupState[name].length - 1) return;
+    setGroupState({
+      ...groupState,
+      [name]: groupState[name]?.filter((_, id) => id !== index),
+    });
   };
 
   const changeRestaurant = (index: number, delta: -1 | 1) => {
-    let rawNewIndex = (state[index]?.originalIndex as number) + delta;
+    let rawNewIndex =
+      (groupState[name][index]?.originalIndex as number) + delta;
     if (rawNewIndex < 0) rawNewIndex = restaurants.length - 1;
     if (rawNewIndex === restaurants.length) rawNewIndex = 0;
 
-    state.splice(index, 1, {
-      name: restaurants[rawNewIndex]?.name as string,
-      items: [
-        {
-          ...restaurants[rawNewIndex]?.items[0],
-          originalIndex: 0,
-        } as SelectedFoodItem,
-      ],
-      originalIndex: rawNewIndex,
+    setGroupState({
+      ...groupState,
+      [name]: groupState[name]?.map((restaurant, id) => {
+        if (id !== index) return restaurant;
+        return {
+          name: restaurants[rawNewIndex]?.name as string,
+          items: [
+            {
+              ...restaurants[rawNewIndex]?.items[0],
+              originalIndex: 0,
+            } as SelectedFoodItem,
+          ],
+          originalIndex: rawNewIndex,
+        };
+      }),
     });
-
-    setGroupState(state);
   };
 
   const addFoodItem = (restaurantIndex: number) => {
-    state[restaurantIndex]?.items.push({
-      ...restaurants[restaurantIndex]?.items[0],
-      originalIndex: 0,
-    } as SelectedFoodItem);
-
-    setGroupState(state);
+    setGroupState({
+      ...groupState,
+      [name]: [
+        ...groupState[name],
+        {
+          ...groupState[name][restaurantIndex],
+          items: [
+            ...groupState[name][restaurantIndex].items,
+            {
+              ...restaurants[restaurantIndex]?.items[0],
+              originalIndex: 0,
+            } as SelectedFoodItem,
+          ],
+        },
+      ],
+    });
   };
 
   const removeFoodItem = (restaurantIndex: number, foodItemIndex: number) => {
-    state[restaurantIndex]?.items.splice(foodItemIndex, 1);
-
-    setGroupState(state);
+    setGroupState({
+      ...groupState,
+      [name]: groupState[name]?.map((restaurant, id) => {
+        if (id !== restaurantIndex) return restaurant;
+        return {
+          ...restaurant,
+          items: restaurant.items.filter((_, id) => id !== foodItemIndex),
+        };
+      }),
+    });
   };
 
   const changeFoodItem = (
@@ -98,91 +126,111 @@ const MainSelector = ({
     delta: -1 | 1
   ) => {
     let rawNewFoodItemIndex =
-      ((state[restaurantIndex] as SelectedRestaurant).items[foodItemIndex]
-        ?.originalIndex as number) + delta;
-    const originalRestaurantItems =
-      restaurants[(state[restaurantIndex] as SelectedRestaurant).originalIndex]
-        ?.items;
+      ((groupState[name][restaurantIndex] as SelectedRestaurant).items[
+        foodItemIndex
+      ]?.originalIndex as number) + delta;
+
+    const originalRestaurantIndex = (
+      groupState[name][restaurantIndex] as SelectedRestaurant
+    ).originalIndex;
+    const originalRestaurantItems = restaurants[originalRestaurantIndex]?.items;
+
     if (rawNewFoodItemIndex < 0)
       rawNewFoodItemIndex = (originalRestaurantItems?.length as number) - 1;
     if (rawNewFoodItemIndex === originalRestaurantItems?.length)
       rawNewFoodItemIndex = 0;
 
-    const tmpState = { ...state };
-    (state[restaurantIndex] as SelectedRestaurant).items.splice(
-      foodItemIndex,
-      1,
-      {
-        ...restaurants[restaurantIndex]?.items[rawNewFoodItemIndex],
-        originalIndex: rawNewFoodItemIndex,
-      } as SelectedFoodItem
-    );
-
-    setGroupState(tmpState);
+    setGroupState({
+      ...groupState,
+      [name]: groupState[name]?.map((restaurant, id) => {
+        if (id !== restaurantIndex) return restaurant;
+        return {
+          ...restaurant,
+          items: restaurant.items.map((item, id) => {
+            if (id !== foodItemIndex) return item;
+            return {
+              ...restaurants[originalRestaurantIndex]?.items[
+                rawNewFoodItemIndex
+              ],
+              originalIndex: rawNewFoodItemIndex,
+            } as SelectedFoodItem;
+          }),
+        };
+      }),
+    });
   };
 
   return (
     <div>
       <div>Pick your food!</div>
-      {state.map((restaurant, restaurantIndex) => (
-        <div className="border-8 border-rose-500" key={restaurantIndex}>
-          <div>{state[restaurantIndex]?.name}</div>
-          <div className="inline">
+      {(groupState[name] as SelectedRestaurant[]).map(
+        (restaurant, restaurantIndex) => (
+          <div className="border-8 border-rose-500" key={restaurantIndex}>
+            <div>
+              {
+                (groupState[name] as SelectedRestaurant[])[restaurantIndex]
+                  ?.name
+              }
+            </div>
+            <div className="inline">
+              {isCurrentUser && (
+                <button onClick={() => changeRestaurant(restaurantIndex, -1)}>
+                  {"<"}
+                </button>
+              )}
+              {isCurrentUser && (
+                <button onClick={() => changeRestaurant(restaurantIndex, 1)}>
+                  {">"}
+                </button>
+              )}
+              {isCurrentUser && (
+                <button onClick={() => removeRestaurant(restaurantIndex)}>
+                  - Restaurant {restaurant.name}
+                </button>
+              )}
+            </div>
+            {restaurant.items.map((food, foodIndex: number) => (
+              <div key={foodIndex}>
+                <div>
+                  {food.name} ${food.price.toFixed(2)}
+                </div>
+                <div className="inline">
+                  {isCurrentUser && (
+                    <button
+                      onClick={() =>
+                        changeFoodItem(restaurantIndex, foodIndex, -1)
+                      }
+                    >
+                      {"<"}
+                    </button>
+                  )}
+                  {isCurrentUser && (
+                    <button
+                      onClick={() =>
+                        changeFoodItem(restaurantIndex, foodIndex, 1)
+                      }
+                    >
+                      {">"}
+                    </button>
+                  )}
+                  {isCurrentUser && (
+                    <button
+                      onClick={() => removeFoodItem(restaurantIndex, foodIndex)}
+                    >
+                      - Food {food.name}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
             {isCurrentUser && (
-              <button onClick={() => changeRestaurant(restaurantIndex, -1)}>
-                {"<"}
-              </button>
-            )}
-            {isCurrentUser && (
-              <button onClick={() => changeRestaurant(restaurantIndex, 1)}>
-                {">"}
-              </button>
-            )}
-            {isCurrentUser && (
-              <button onClick={() => removeRestaurant(restaurantIndex)}>
-                - Restaurant {restaurant.name}
+              <button onClick={() => addFoodItem(restaurantIndex)}>
+                + Food
               </button>
             )}
           </div>
-          {state[restaurantIndex]?.items.map((food, foodIndex: number) => (
-            <div key={foodIndex}>
-              <div>
-                {food.name} ${food.price.toFixed(2)}
-              </div>
-              <div className="inline">
-                {isCurrentUser && (
-                  <button
-                    onClick={() =>
-                      changeFoodItem(restaurantIndex, foodIndex, -1)
-                    }
-                  >
-                    {"<"}
-                  </button>
-                )}
-                {isCurrentUser && (
-                  <button
-                    onClick={() =>
-                      changeFoodItem(restaurantIndex, foodIndex, 1)
-                    }
-                  >
-                    {">"}
-                  </button>
-                )}
-                {isCurrentUser && (
-                  <button
-                    onClick={() => removeFoodItem(restaurantIndex, foodIndex)}
-                  >
-                    - Food {food.name}
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-          {isCurrentUser && (
-            <button onClick={() => addFoodItem(restaurantIndex)}>+ Food</button>
-          )}
-        </div>
-      ))}
+        )
+      )}
       {isCurrentUser && (
         <button
           className="rounded-md bg-black text-blue-600 p-2 h-8 text-center"

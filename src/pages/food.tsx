@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import type { GetServerSidePropsContext } from "next";
 import { User } from "@prisma/client";
 import MainSelector from "@/components/MainSelector";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 
 type FoodProps = {
   users: User[];
@@ -59,7 +59,7 @@ const socket = io("ws://localhost:3001");
 
 const Food: NextPage = ({
   users: serverSideUsers,
-  name: currentName,
+  name: loggedInName,
   currentUser,
 }: FoodProps | Record<string, never>) => {
   // useEffect(() => {
@@ -90,7 +90,7 @@ const Food: NextPage = ({
 
     console.log("captured inputs from INVITE form:", { username });
     inviteMutation.mutate(
-      { invitedName: username, currentName },
+      { invitedName: username, currentName: loggedInName },
       {
         onSuccess() {
           setIsComponentVisible(false);
@@ -147,7 +147,7 @@ const Food: NextPage = ({
       {/* FLEX WITH YOUR FRIENDS */}
       <div className="flex gap-2 justify-evenly">
         {serverSideUsers.map(({ name }, index) => {
-          const isCurrentUser = name === currentName;
+          const isCurrentUser = name === loggedInName;
           return (
             <div
               className={`m-8 ${isCurrentUser && "border-red-600 border-2"}`}
@@ -168,7 +168,7 @@ const Food: NextPage = ({
                   { name: "4", items: [{ name: "coffee", price: 45.45 }] },
                 ]}
                 name={name}
-                currentName={currentName}
+                loggedInName={loggedInName}
                 groupState={groupState}
                 setGroupState={setGroupState}
               />
