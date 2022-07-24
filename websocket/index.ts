@@ -6,7 +6,7 @@ const io = new Server(3001, {
   },
 });
 
-const m = new Map();
+const m: Map<string, Map<string, any>> = new Map();
 // TODO: treat reconnect logic
 
 // io.on("user:first:render", (socket: Socket) => {
@@ -39,7 +39,7 @@ io.on("connection", (socket: Socket) => {
         ])
       );
     } else {
-      m.set(foodieGroupId, new Map([[to, {}]]));
+      m.get(foodieGroupId).set(to, {});
     }
 
     console.log("map after invite sent", m);
@@ -91,6 +91,6 @@ io.on("connection", (socket: Socket) => {
       name
     );
   });
-
-  console.log("registered all handlers!");
 });
+
+console.log("registered all handlers!");

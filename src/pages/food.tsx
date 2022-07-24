@@ -28,25 +28,29 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   console.log({ session });
 
-  if (session) {
-    // Find if that user has any foodie group associated
-    const foundUser = await prisma.user.findUnique({
-      where: { id: session?.user?.id },
-      include: { foodieGroup: { include: { users: true } } },
-    });
-
-    const users = foundUser?.foodieGroup?.users || [];
+  // I tried to search for a solution at middleware level, but this will work
+  // as it is the main page for the application
+  if (!session) {
     return {
-      props: {
-        users,
-        name: session.user?.name || null,
-        currentUser: session.user,
+      redirect: {
+        destination: "/api/auth/signin",
       },
     };
   }
 
+  // Find if that user has any foodie group associated
+  const foundUser = await prisma.user.findUnique({
+    where: { id: session?.user?.id },
+    include: { foodieGroup: { include: { users: true } } },
+  });
+
+  const users = foundUser?.foodieGroup?.users || [];
   return {
-    props: {},
+    props: {
+      users: users,
+      name: session.user?.name || null,
+      currentUser: session.user,
+    },
   };
 }
 
@@ -61,7 +65,7 @@ interface InviteForm extends HTMLFormElement {
 const socket = io("ws://localhost:3001");
 
 const Food: NextPage = ({
-  users: serverSideUsers,
+  users: serverSideUsers = [],
   name: loggedInName,
   currentUser,
 }: FoodProps | Record<string, never>) => {
@@ -91,8 +95,6 @@ const Food: NextPage = ({
       socket.off("server:state:updated");
     };
   });
-
-  console.log(serverSideUsers);
 
   const [groupState, setGroupState] = useState(
     serverSideUsers.length

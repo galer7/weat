@@ -41,9 +41,8 @@ const MainSelector = ({
   // better determine next available restaurants and/or item for a restaurant
   const loggedInName = loggedInUser.name;
   const isCurrentUser = name === loggedInName;
-  const currentUserState = groupState[name];
+  const currentUserState = groupState[loggedInName];
   useEffect(() => {
-    console.log("inside useEffect!");
     socket.emit(
       "user:state:updated",
       name,
