@@ -1,3 +1,7 @@
+import { User } from "@prisma/client";
+import { useEffect } from "react";
+import { Socket } from "socket.io-client";
+
 type FoodItem = {
   name: string;
   price: number;
@@ -21,19 +25,32 @@ type SelectedRestaurant = {
 const MainSelector = ({
   restaurants,
   name,
-  loggedInName,
+  loggedInUser,
   groupState,
   setGroupState,
+  socket,
 }: {
   restaurants: Restaurant[];
   name: string;
-  loggedInName: string;
+  loggedInUser: User;
   groupState: Record<string, SelectedRestaurant[]>;
   setGroupState: any;
+  socket: Socket;
 }) => {
   // TODO: use a Proxy on the restaurants array so that we can
   // better determine next available restaurants and/or item for a restaurant
+  const loggedInName = loggedInUser.name;
   const isCurrentUser = name === loggedInName;
+  const currentUserState = groupState[name];
+  useEffect(() => {
+    console.log("inside useEffect!");
+    socket.emit(
+      "user:state:updated",
+      name,
+      loggedInUser.foodieGroupId,
+      currentUserState
+    );
+  }, [currentUserState]);
 
   const addRestaurant = () => {
     if (groupState[name].length === restaurants.length) return;

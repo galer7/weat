@@ -1,6 +1,6 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from 'bcrypt';
+import { compare } from "bcrypt";
 
 // Prisma adapter for NextAuth, optional and can be removed
 import { prisma } from "@/server/db/client";
@@ -10,20 +10,22 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     session({ session, token }) {
       if (session?.user) {
-        session.user.id = token.uid as string
+        session.user.id = token.uid as string;
+        session.user.foodieGroupId = token.foodieGroupId as string;
       }
       return session;
     },
     redirect(params) {
-      return `${params.baseUrl}/food`
+      return `${params.baseUrl}/food`;
     },
     jwt({ token, user }) {
       if (user) {
         // just after login, fresh data. persist data from login in jwt
         token.uid = user.id;
+        token.foodieGroupId = user.foodieGroupId;
       }
       return token;
-    }
+    },
   },
   providers: [
     // ...add more providers here
@@ -45,17 +47,20 @@ export const authOptions: NextAuthOptions = {
         const user = await prisma.user.findFirst({
           where: {
             email: credentials?.email,
-          }
+          },
         });
 
         if (!user || !credentials?.password) return null;
-        const isSamePassword = await compare(credentials.password, user.password);
+        const isSamePassword = await compare(
+          credentials.password,
+          user.password
+        );
         if (!isSamePassword) return null;
 
         return user;
       },
     }),
-  ]
+  ],
 };
 
 export default NextAuth(authOptions);

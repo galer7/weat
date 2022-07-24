@@ -15,24 +15,18 @@ const m = new Map();
 //   });
 // });
 
-io.on(
-  "user:invite:sent",
-  (
-    socket: Socket,
-    {
+io.on("connection", (socket: Socket) => {
+  socket.on("user:invite:sent", (from, to, foodieGroupId, fromUserState) => {
+    // create room on first group invite sent
+    console.log("received user:invite:sent", {
       from,
       to,
       foodieGroupId,
       fromUserState,
-    }: {
-      from: string;
-      to: string;
-      foodieGroupId: string;
-      fromUserState: object;
-    }
-  ) => {
-    // create room on first group invite sent
-    socket.emit("server:invite:sent", { from, to, foodieGroupId });
+    });
+
+    // send to all users ever unfortunately
+    io.emit("server:invite:sent", from, to, foodieGroupId);
     socket.join(foodieGroupId);
 
     // if it is the first invite, the sender sends its user state also
@@ -47,19 +41,11 @@ io.on(
     } else {
       m.set(foodieGroupId, new Map([[to, {}]]));
     }
-  }
-);
 
-io.on(
-  "user:invite:accepted",
-  (
-    socket: Socket,
-    {
-      name,
-      foodieGroupId,
-      userState,
-    }: { name: string; foodieGroupId: string; userState: any }
-  ) => {
+    console.log("map after invite sent", m);
+  });
+
+  socket.on("user:invite:accepted", (name, foodieGroupId, userState) => {
     // add socket which accepted the invite to the room
     socket.join(foodieGroupId);
 
@@ -70,28 +56,41 @@ io.on(
       console.log(`user ${name} does not exist on FG ${foodieGroupId}`);
     foodieGroupMap.set(name, userState);
 
-    socket.to(foodieGroupId).emit("server:state:updated", {
-      state: superjson.stringify(foodieGroupMap.get(name)),
-      name,
+    foodieGroupMap.forEach((userState, name) => {
+      io.to(foodieGroupId).emit(
+        "server:state:updated",
+        superjson.stringify(userState),
+        name
+      );
     });
-  }
-);
+  });
 
-io.on(
-  "user:state:updated",
-  (socket: Socket, { name, foodieGroupId, userState }) => {
+  socket.on("user:state:updated", (name, foodieGroupId, userState) => {
+    console.log("received user:state:updated event", {
+      name,
+      foodieGroupId,
+      userState,
+    });
+
+    console.log(m);
     // update group state so that we can render RT updates
+    if (!m.get(foodieGroupId)) {
+      console.log(`user ${name} does not exist on FG ${foodieGroupId}`);
+      // TODO: remove this, it should theoretically exist already
+      m.set(foodieGroupId, new Map());
+    }
     const foodieGroupMap: Map<string, object> | undefined =
       m.get(foodieGroupId);
-    if (!foodieGroupMap)
-      console.log(`user ${name} does not exist on FG ${foodieGroupId}`);
     foodieGroupMap.set(name, userState);
 
-    socket.to(foodieGroupId).emit("server:state:updated", {
-      state: superjson.stringify(foodieGroupMap.get(name)),
-      name,
-    });
-  }
-);
+    console.log(m);
 
-console.log("registered all handlers!");
+    io.to(foodieGroupId).emit(
+      "server:state:updated",
+      superjson.stringify(foodieGroupMap.get(name)),
+      name
+    );
+  });
+
+  console.log("registered all handlers!");
+});

@@ -10,6 +10,7 @@ import type { GetServerSidePropsContext } from "next";
 import { User } from "@prisma/client";
 import MainSelector from "@/components/MainSelector";
 import { io } from "socket.io-client";
+import superjson from "superjson";
 
 type FoodProps = {
   users: User[];
@@ -24,6 +25,8 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     context.res,
     nextAuthOptions
   );
+
+  console.log({ session });
 
   if (session) {
     // Find if that user has any foodie group associated
@@ -62,20 +65,42 @@ const Food: NextPage = ({
   name: loggedInName,
   currentUser,
 }: FoodProps | Record<string, never>) => {
-  // useEffect(() => {
-  //   // Update the document title using the browser API
-  //   navigator.geolocation.getCurrentPosition(function (position) {
-  //     console.log("Latitude is :", position.coords.latitude);
-  //     console.log("Longitude is :", position.coords.longitude);
-  //   });
-  // }, []);
+  useEffect(() => {
+    socket.on("server:invite:sent", (from, to, foodieGroupId) => {
+      console.log("an invite happened!");
+      if (to === currentUser.name) {
+        console.log("received invite sent for me!");
+        setGroupInvitations([...groupInvitations, { from, to, foodieGroupId }]);
+      } else {
+        // TODO: render pending invite accept animation
+      }
+    });
 
-  const [groupUsers, setGroupUsers] = useState<User[]>(serverSideUsers);
+    socket.on("server:state:updated", (stringifiedState, name) => {
+      console.log("server:state:updated", { stringifiedState, name });
+      if (name === loggedInName) return;
+      const parsedState = superjson.parse(stringifiedState);
+      setGroupState({
+        ...groupState,
+        [name]: parsedState,
+      });
+    });
+
+    return () => {
+      socket.off("server:invite:sent");
+      socket.off("server:state:updated");
+    };
+  });
+
+  console.log(serverSideUsers);
+
   const [groupState, setGroupState] = useState(
-    groupUsers.reduce((acc, user) => {
-      acc[user.name] = [];
-      return acc;
-    }, {} as Record<string, any>)
+    serverSideUsers.length
+      ? serverSideUsers.reduce((acc, user) => {
+          acc[user.name] = [];
+          return acc;
+        }, {} as Record<string, any>)
+      : { [loggedInName]: [] }
   );
   const [groupInvitations, setGroupInvitations] = useState<
     Array<{ from: string; foodieGroupId: string; to: string }>
@@ -98,38 +123,26 @@ const Food: NextPage = ({
       }
     );
 
+    socket.emit(
+      "user:invite:sent",
+      loggedInName,
+      username,
+      currentUser.foodieGroupId,
+      groupState[loggedInName]
+    );
+
     // add to groupState as empty object
-    const tmpState = { ...groupState };
-    tmpState[username] = [];
-    setGroupState(tmpState);
+    setGroupState({
+      ...groupState,
+      [username]: [],
+    });
   };
-
-  useEffect(() => {
-    socket.on("server:invite:sent", ({ from, to, foodieGroupId }) => {
-      if (currentUser.foodieGroupId !== foodieGroupId) return;
-
-      if (to === currentUser.name) {
-        setGroupInvitations([...groupInvitations, { from, to, foodieGroupId }]);
-      } else {
-        // TODO: render pending invite accept animation
-      }
-    });
-
-    socket.on("server:state:updated", ({ state, name }) => {
-      const tmpState = { ...groupState };
-      tmpState[name] = state;
-      setGroupState(tmpState);
-    });
-
-    return () => {
-      socket.off("server:invite:sent");
-      socket.off("server:state:updated");
-    };
-  });
 
   const { ref, isComponentVisible, setIsComponentVisible } =
     useComponentVisible<HTMLDivElement>(false);
   const inviteMutation = trpc.useMutation("food.invite");
+  const acceptInviteMutation = trpc.useMutation("food.accept-invite");
+  console.log(isComponentVisible);
 
   return (
     <div>
@@ -143,10 +156,10 @@ const Food: NextPage = ({
         </div>
       </div>
 
-      <div>{JSON.stringify(serverSideUsers)}</div>
+      <div>{JSON.stringify(groupState)}</div>
       {/* FLEX WITH YOUR FRIENDS */}
       <div className="flex gap-2 justify-evenly">
-        {serverSideUsers.map(({ name }, index) => {
+        {Object.keys(groupState).map((name, index) => {
           const isCurrentUser = name === loggedInName;
           return (
             <div
@@ -168,37 +181,36 @@ const Food: NextPage = ({
                   { name: "4", items: [{ name: "coffee", price: 45.45 }] },
                 ]}
                 name={name}
-                loggedInName={loggedInName}
+                loggedInUser={currentUser}
                 groupState={groupState}
                 setGroupState={setGroupState}
+                socket={socket}
               />
               {/* MODAL FOR INVITE */}
-              {isCurrentUser && (
-                <div ref={ref}>
-                  {isComponentVisible && (
-                    <Modal>
-                      <div>Invite a friend</div>
-                      <form
-                        action=""
-                        className="w-1/2"
-                        onSubmit={handleInviteSubmit}
-                      >
-                        <fieldset disabled={inviteMutation.isLoading}>
-                          <label className="flex gap-2 justify-around">
-                            Username
-                            <input
-                              type="text"
-                              id="username"
-                              className="border-black border-2"
-                            />
-                          </label>
-                          <input type="submit" value="submit" />
-                        </fieldset>
-                      </form>
-                    </Modal>
-                  )}
-                </div>
-              )}
+              <div ref={ref}>
+                {isComponentVisible && (
+                  <Modal>
+                    <div>Invite a friend</div>
+                    <form
+                      action=""
+                      className="w-1/2"
+                      onSubmit={handleInviteSubmit}
+                    >
+                      <fieldset disabled={inviteMutation.isLoading}>
+                        <label className="flex gap-2 justify-around">
+                          Username
+                          <input
+                            type="text"
+                            id="username"
+                            className="border-black border-2"
+                          />
+                        </label>
+                        <input type="submit" value="submit" />
+                      </fieldset>
+                    </form>
+                  </Modal>
+                )}
+              </div>
             </div>
           );
         })}
@@ -210,11 +222,14 @@ const Food: NextPage = ({
             <div>Invite received from {from}</div>
             <button
               onClick={() => {
-                socket.emit("user:invite:accepted", {
-                  name: to,
+                acceptInviteMutation.mutate({ from });
+
+                socket.emit(
+                  "user:invite:accepted",
+                  to,
                   foodieGroupId,
-                  userState: groupState[to],
-                });
+                  groupState[to]
+                );
 
                 // delete all pending invitations after accepting one
                 setGroupInvitations([]);
