@@ -40,7 +40,28 @@ The initial dump should aggregate all changes so far from all other participants
    2. invited will have a popup with this invitation: accept invitation and will emit `user:invite:accepted`
 6. ws server on `user:invite:accepted` will receive invited user state. ws server updates state with this new user state
 7. ws server emits `server:state:updated` to all participants in the room
-8. 
+
+# Features
+## Login
+- the user will be redirected to login when going to /food
+- user name should be displayed on top of his selector (first it will be only one selector, if the user is not included in a group)
+
+## (First) Invite / create group
+- if the user has a null `foodieGroupId`, it means that it has no group
+- when inviting (and not accepted yet), a group should be created => `foodieGroupId`. The other users from the group will render a pending animation for the new user
+- the invited user will receive an invite popup on his page
+- when the invited user accepts the invite, a new selection menu will be rendered for the user
+- TODO: the list will be updating on user type, and it will display only online users whose names pass the matcher's rules
+
+## Food selection
+- a user can select multiple food items from multiple restaurants
+- add/remove/change for each node
+- ideally, the user cannot have the same restaurant chosen twice, nor the same food item (from a given restaurant) twice
+- if the user is in a group with other users, his changes will be emitted to the other users in the group, and changes of other users will behave the same
+
+# Constraints
+- trpc api should be disabled for unauthenticated users
+- 
 
 ---
 # Links

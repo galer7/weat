@@ -15,9 +15,6 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    redirect(params) {
-      return `${params.baseUrl}/food`;
-    },
     jwt({ token, user }) {
       if (user) {
         // just after login, fresh data. persist data from login in jwt
@@ -61,6 +58,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  debug: true,
 };
 
 export default NextAuth(authOptions);

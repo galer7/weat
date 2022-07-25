@@ -41,54 +41,55 @@ const MainSelector = ({
   // better determine next available restaurants and/or item for a restaurant
   const loggedInName = loggedInUser.name;
   const isCurrentUser = name === loggedInName;
-  const currentUserState = groupState[loggedInName];
+  const loggedInUserState = groupState[loggedInName];
+  const currentUserState = groupState[name] as SelectedRestaurant[];
   useEffect(() => {
     socket.emit(
       "user:state:updated",
       name,
       loggedInUser.foodieGroupId,
-      currentUserState
+      loggedInUserState
     );
-  }, [currentUserState]);
+  }, [loggedInUserState]);
 
   const addRestaurant = () => {
-    if (groupState[name].length === restaurants.length) return;
+    if (currentUserState.length === restaurants.length) return;
 
     setGroupState({
       ...groupState,
       [name]: [
-        ...groupState[name],
+        ...currentUserState,
         {
-          name: restaurants[groupState[name].length]?.name,
+          name: restaurants[currentUserState.length]?.name,
           items: [
             {
-              ...restaurants[groupState[name].length]?.items[0],
+              ...restaurants[currentUserState.length]?.items[0],
               originalIndex: 0,
             },
           ],
-          originalIndex: groupState[name].length,
+          originalIndex: currentUserState.length,
         },
       ],
     });
   };
 
   const removeRestaurant = (index: number) => {
-    if (index < 0 || index > groupState[name].length - 1) return;
+    if (index < 0 || index > currentUserState.length - 1) return;
     setGroupState({
       ...groupState,
-      [name]: groupState[name]?.filter((_, id) => id !== index),
+      [name]: currentUserState?.filter((_, id) => id !== index),
     });
   };
 
   const changeRestaurant = (index: number, delta: -1 | 1) => {
     let rawNewIndex =
-      (groupState[name][index]?.originalIndex as number) + delta;
+      (currentUserState[index]?.originalIndex as number) + delta;
     if (rawNewIndex < 0) rawNewIndex = restaurants.length - 1;
     if (rawNewIndex === restaurants.length) rawNewIndex = 0;
 
     setGroupState({
       ...groupState,
-      [name]: groupState[name]?.map((restaurant, id) => {
+      [name]: currentUserState?.map((restaurant, id) => {
         if (id !== index) return restaurant;
         return {
           name: restaurants[rawNewIndex]?.name as string,
@@ -108,11 +109,11 @@ const MainSelector = ({
     setGroupState({
       ...groupState,
       [name]: [
-        ...groupState[name],
+        ...currentUserState,
         {
-          ...groupState[name][restaurantIndex],
+          ...currentUserState[restaurantIndex],
           items: [
-            ...groupState[name][restaurantIndex].items,
+            ...(currentUserState[restaurantIndex] as SelectedRestaurant).items,
             {
               ...restaurants[restaurantIndex]?.items[0],
               originalIndex: 0,
@@ -126,7 +127,7 @@ const MainSelector = ({
   const removeFoodItem = (restaurantIndex: number, foodItemIndex: number) => {
     setGroupState({
       ...groupState,
-      [name]: groupState[name]?.map((restaurant, id) => {
+      [name]: currentUserState?.map((restaurant, id) => {
         if (id !== restaurantIndex) return restaurant;
         return {
           ...restaurant,
@@ -142,12 +143,12 @@ const MainSelector = ({
     delta: -1 | 1
   ) => {
     let rawNewFoodItemIndex =
-      ((groupState[name][restaurantIndex] as SelectedRestaurant).items[
+      ((currentUserState[restaurantIndex] as SelectedRestaurant).items[
         foodItemIndex
       ]?.originalIndex as number) + delta;
 
     const originalRestaurantIndex = (
-      groupState[name][restaurantIndex] as SelectedRestaurant
+      currentUserState[restaurantIndex] as SelectedRestaurant
     ).originalIndex;
     const originalRestaurantItems = restaurants[originalRestaurantIndex]?.items;
 
@@ -158,7 +159,7 @@ const MainSelector = ({
 
     setGroupState({
       ...groupState,
-      [name]: groupState[name]?.map((restaurant, id) => {
+      [name]: currentUserState?.map((restaurant, id) => {
         if (id !== restaurantIndex) return restaurant;
         return {
           ...restaurant,
@@ -179,74 +180,65 @@ const MainSelector = ({
   return (
     <div>
       <div>Pick your food!</div>
-      {(groupState[name] as SelectedRestaurant[]).map(
-        (restaurant, restaurantIndex) => (
-          <div className="border-8 border-rose-500" key={restaurantIndex}>
-            <div>
-              {
-                (groupState[name] as SelectedRestaurant[])[restaurantIndex]
-                  ?.name
-              }
-            </div>
-            <div className="inline">
-              {isCurrentUser && (
-                <button onClick={() => changeRestaurant(restaurantIndex, -1)}>
-                  {"<"}
-                </button>
-              )}
-              {isCurrentUser && (
-                <button onClick={() => changeRestaurant(restaurantIndex, 1)}>
-                  {">"}
-                </button>
-              )}
-              {isCurrentUser && (
-                <button onClick={() => removeRestaurant(restaurantIndex)}>
-                  - Restaurant {restaurant.name}
-                </button>
-              )}
-            </div>
-            {restaurant.items.map((food, foodIndex: number) => (
-              <div key={foodIndex}>
-                <div>
-                  {food.name} ${food.price.toFixed(2)}
-                </div>
-                <div className="inline">
-                  {isCurrentUser && (
-                    <button
-                      onClick={() =>
-                        changeFoodItem(restaurantIndex, foodIndex, -1)
-                      }
-                    >
-                      {"<"}
-                    </button>
-                  )}
-                  {isCurrentUser && (
-                    <button
-                      onClick={() =>
-                        changeFoodItem(restaurantIndex, foodIndex, 1)
-                      }
-                    >
-                      {">"}
-                    </button>
-                  )}
-                  {isCurrentUser && (
-                    <button
-                      onClick={() => removeFoodItem(restaurantIndex, foodIndex)}
-                    >
-                      - Food {food.name}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+      {currentUserState.map((restaurant, restaurantIndex) => (
+        <div className="border-2 border-yellow-500" key={restaurantIndex}>
+          <div>{currentUserState[restaurantIndex]?.name}</div>
+          <div className="inline">
             {isCurrentUser && (
-              <button onClick={() => addFoodItem(restaurantIndex)}>
-                + Food
+              <button onClick={() => changeRestaurant(restaurantIndex, -1)}>
+                {"<"}
+              </button>
+            )}
+            {isCurrentUser && (
+              <button onClick={() => changeRestaurant(restaurantIndex, 1)}>
+                {">"}
+              </button>
+            )}
+            {isCurrentUser && (
+              <button onClick={() => removeRestaurant(restaurantIndex)}>
+                - Restaurant {restaurant.name}
               </button>
             )}
           </div>
-        )
-      )}
+          {restaurant.items.map((food, foodIndex: number) => (
+            <div key={foodIndex}>
+              <div>
+                {food.name} ${food.price.toFixed(2)}
+              </div>
+              <div className="inline">
+                {isCurrentUser && (
+                  <button
+                    onClick={() =>
+                      changeFoodItem(restaurantIndex, foodIndex, -1)
+                    }
+                  >
+                    {"<"}
+                  </button>
+                )}
+                {isCurrentUser && (
+                  <button
+                    onClick={() =>
+                      changeFoodItem(restaurantIndex, foodIndex, 1)
+                    }
+                  >
+                    {">"}
+                  </button>
+                )}
+                {isCurrentUser && (
+                  <button
+                    onClick={() => removeFoodItem(restaurantIndex, foodIndex)}
+                  >
+                    - Food {food.name}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {isCurrentUser && (
+            <button onClick={() => addFoodItem(restaurantIndex)}>+ Food</button>
+          )}
+        </div>
+      ))}
       {isCurrentUser && (
         <button
           className="rounded-md bg-black text-blue-600 p-2 h-8 text-center"

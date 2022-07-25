@@ -26,8 +26,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     nextAuthOptions
   );
 
-  console.log({ session });
-
   // I tried to search for a solution at middleware level, but this will work
   // as it is the main page for the application
   if (!session) {
@@ -144,7 +142,6 @@ const Food: NextPage = ({
     useComponentVisible<HTMLDivElement>(false);
   const inviteMutation = trpc.useMutation("food.invite");
   const acceptInviteMutation = trpc.useMutation("food.accept-invite");
-  console.log(isComponentVisible);
 
   return (
     <div>
