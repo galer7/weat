@@ -53,11 +53,15 @@ const MainSelector = ({
       return;
     }
 
+    console.log("HEREEEE", groupState);
+
     console.log("fired emit user:state:updated", [
       loggedInName,
       loggedInUser.foodieGroupId,
       loggedInUserState,
     ]);
+
+    console.log({ loggedInUserState });
     socket.emit(
       "user:state:updated",
       loggedInName,
@@ -122,19 +126,19 @@ const MainSelector = ({
   const addFoodItem = (restaurantIndex: number) => {
     setGroupState({
       ...groupState,
-      [name]: [
-        ...currentUserState,
-        {
-          ...currentUserState[restaurantIndex],
+      [name]: currentUserState.map((restaurant, id) => {
+        if (id !== restaurantIndex) return restaurant;
+        return {
+          ...restaurant,
           items: [
-            ...(currentUserState[restaurantIndex] as SelectedRestaurant).items,
+            ...restaurant.items,
             {
               ...restaurants[restaurantIndex]?.items[0],
               originalIndex: 0,
             } as SelectedFoodItem,
           ],
-        },
-      ],
+        };
+      }),
     });
   };
 

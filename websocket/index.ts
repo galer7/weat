@@ -92,15 +92,11 @@ io.on("connection", (socket: Socket) => {
       name,
     ]);
 
-    foodieGroupMap.forEach(async (userState, name) => {
-      console.log({ userState, name });
-      console.log((await io.to(foodieGroupId).fetchSockets()).length);
-      io.to(foodieGroupId).emit(
-        "server:state:updated",
-        superjson.stringify(userState),
-        name
-      );
-    });
+    io.to(foodieGroupId).emit(
+      "server:state:updated",
+      superjson.stringify(userState),
+      name
+    );
   });
 });
 

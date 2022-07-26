@@ -71,12 +71,24 @@ interface InviteForm extends HTMLFormElement {
   readonly elements: InviteFormFields;
 }
 
+const socket = io("ws://localhost:3001");
+
 const Food: NextPage = ({
   users: serverSideUsers = [],
   name: loggedInName,
   currentUser,
 }: FoodProps | Record<string, never>) => {
-  const socket = io("ws://localhost:3001");
+  // set initial empty arrays for users if in a group,
+  // else, just empty array for the logged in user
+  // TODO: delete this logic, as the WS server can send the entire group state on initial render
+  const [groupState, setGroupState] = useState(
+    serverSideUsers.length
+      ? serverSideUsers.reduce((acc, user) => {
+          acc[user.name] = [];
+          return acc;
+        }, {} as Record<string, Array<object>>)
+      : { [loggedInName]: [] }
+  );
 
   useEffect(() => {
     socket.on("server:first:render", (stringifiedState) => {
@@ -110,7 +122,11 @@ const Food: NextPage = ({
     });
 
     socket.on("server:state:updated", (stringifiedState, name) => {
-      console.log("server:state:updated", { stringifiedState, name });
+      console.log("server:state:updated", {
+        stringifiedState,
+        name,
+        groupState,
+      });
       if (name === loggedInName) return;
       const parsedState = superjson.parse(stringifiedState);
       setGroupState({
@@ -120,22 +136,12 @@ const Food: NextPage = ({
     });
 
     return () => {
+      socket.off("server:first:render");
       socket.off("server:invite:sent");
       socket.off("server:state:updated");
     };
-  }, []);
+  });
 
-  // set initial empty arrays for users if in a group,
-  // else, just empty array for the logged in user
-  // TODO: delete this logic, as the WS server can send the entire group state on initial render
-  const [groupState, setGroupState] = useState(
-    serverSideUsers.length
-      ? serverSideUsers.reduce((acc, user) => {
-          acc[user.name] = [];
-          return acc;
-        }, {} as Record<string, Array<object>>)
-      : { [loggedInName]: [] }
-  );
   const [groupInvitations, setGroupInvitations] = useState<
     Array<{ from: string; foodieGroupId: string; to: string }>
   >([]);
