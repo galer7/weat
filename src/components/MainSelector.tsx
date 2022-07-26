@@ -124,6 +124,10 @@ const MainSelector = ({
   };
 
   const addFoodItem = (restaurantIndex: number) => {
+    const originalRestaurantIndex = (
+      currentUserState[restaurantIndex] as SelectedRestaurant
+    ).originalIndex;
+
     setGroupState({
       ...groupState,
       [name]: currentUserState.map((restaurant, id) => {
@@ -133,7 +137,7 @@ const MainSelector = ({
           items: [
             ...restaurant.items,
             {
-              ...restaurants[restaurantIndex]?.items[0],
+              ...restaurants[originalRestaurantIndex]?.items[0],
               originalIndex: 0,
             } as SelectedFoodItem,
           ],
