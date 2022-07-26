@@ -15,7 +15,11 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+    redirect(params) {
+      return `${params.baseUrl}/food`;
+    },
     jwt({ token, user }) {
+      console.log("jwt", { user, token });
       if (user) {
         // just after login, fresh data. persist data from login in jwt
         token.uid = user.id;

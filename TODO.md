@@ -2,11 +2,13 @@
 - [x] register -> 3h debugging session because of superjson transformer
 - [x] login using next-auth endpoint
 - [x] find how to use next-auth session inside `getServerSideProps`
-- [ ] add google provider for fun
+- [ ] add google provider
 - [x] find how sessions work
 - [x] add next router to show unauthorized if you are not logged in
 - [x] move reconnect render logic at the WS level. progress so far is still good because we also need `getServerSideProps` to get session username
 - [x] socket-io: rooms and broadcast to the sessions in the room
+- [ ] ws: persist foodieGroup in db
+- [ ] ws: use `NEXTAUTH_SECRET` env var + jwt token from next-auth => decode jwt on WS server and map this new session to the user => send updates to all sockets assigned for one user now
 - [ ] implement logout button
 - [ ] find solutions for a on-typing-updating list for users + add online/offline green dot. will probably need to use next-auth's `Session` model
 - [ ] make use of CSRF tokens from next-auth. first learn where they are helpful

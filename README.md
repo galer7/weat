@@ -18,7 +18,7 @@ How do we know that the client will send correct data to the WS server? I must c
 
 # Saving socket states per client
 Saving client work should be emitted only if there exists a room context. If a client has some progress so far and joins a room, the WS server should emit to all other sockets in that room the progress of the current client, and vice-versa.
-The initial dump should aggregate all changes so far from all other participants. Future changes will be announced per change per client.
+The initial dump should aggregate all changes so far from all other participants. Future changes will be announced per change per client. 
 
 # Main picker logic
 ## Restaurant picker
@@ -52,6 +52,10 @@ The initial dump should aggregate all changes so far from all other participants
 - the invited user will receive an invite popup on his page
 - when the invited user accepts the invite, a new selection menu will be rendered for the user
 - TODO: the list will be updating on user type, and it will display only online users whose names pass the matcher's rules
+
+## Resume on page refresh
+- if the user is not in a group, then tab refresh will delete his selection
+- if the user is part of a group, the state is persisted by the WS server in the DB. So, on page refresh, the user will emit a `user:initial:event`; when the server gets that, the server will emit `server:initial:event`, which will respond with the entire group state
 
 ## Food selection
 - a user can select multiple food items from multiple restaurants

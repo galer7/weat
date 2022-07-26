@@ -1,5 +1,5 @@
 import { User } from "@prisma/client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Socket } from "socket.io-client";
 
 type FoodItem = {
@@ -43,10 +43,24 @@ const MainSelector = ({
   const isCurrentUser = name === loggedInName;
   const loggedInUserState = groupState[loggedInName];
   const currentUserState = groupState[name] as SelectedRestaurant[];
+  const [isFirstRender, setIsFirstRender] = useState(true);
+
   useEffect(() => {
+    if (!isCurrentUser) return;
+    if (isFirstRender) {
+      socket.emit("user:first:render", loggedInUser.foodieGroupId);
+      setIsFirstRender(false);
+      return;
+    }
+
+    console.log("fired emit user:state:updated", [
+      loggedInName,
+      loggedInUser.foodieGroupId,
+      loggedInUserState,
+    ]);
     socket.emit(
       "user:state:updated",
-      name,
+      loggedInName,
       loggedInUser.foodieGroupId,
       loggedInUserState
     );
@@ -252,3 +266,4 @@ const MainSelector = ({
 };
 
 export default MainSelector;
+export type { SelectedRestaurant };

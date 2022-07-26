@@ -8,7 +8,7 @@ import { trpc } from "@/utils/trpc";
 import { useEffect, useState } from "react";
 import type { GetServerSidePropsContext } from "next";
 import { User } from "@prisma/client";
-import MainSelector from "@/components/MainSelector";
+import MainSelector, { SelectedRestaurant } from "@/components/MainSelector";
 import { io } from "socket.io-client";
 import superjson from "superjson";
 
@@ -36,11 +36,22 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
+  console.log("session from food.tsx", { session });
+
   // Find if that user has any foodie group associated
   const foundUser = await prisma.user.findUnique({
     where: { id: session?.user?.id },
     include: { foodieGroup: { include: { users: true } } },
   });
+
+  // for weird case where foodieGroupId was not null in the database, but was null in session
+  if (foundUser?.foodieGroupId !== session.user?.foodieGroupId) {
+    return {
+      redirect: {
+        destination: "/api/auth/signin",
+      },
+    };
+  }
 
   const users = foundUser?.foodieGroup?.users || [];
   return {
@@ -60,14 +71,34 @@ interface InviteForm extends HTMLFormElement {
   readonly elements: InviteFormFields;
 }
 
-const socket = io("ws://localhost:3001");
-
 const Food: NextPage = ({
   users: serverSideUsers = [],
   name: loggedInName,
   currentUser,
 }: FoodProps | Record<string, never>) => {
+  const socket = io("ws://localhost:3001");
+
   useEffect(() => {
+    socket.on("server:first:render", (stringifiedState) => {
+      console.log("first render!", { stringifiedState });
+      const parsedState = superjson.parse(stringifiedState) as Map<
+        string,
+        Array<object>
+      >;
+
+      if (parsedState) {
+        console.log({ parsedState, groupState });
+        setGroupState(
+          Object.keys(groupState).reduce((acc, name) => {
+            const initialStateForUser = parsedState.get(name);
+            if (initialStateForUser) acc[name] = initialStateForUser;
+            else acc[name] = [];
+            return acc;
+          }, {} as Record<string, Array<object>>)
+        );
+      }
+    });
+
     socket.on("server:invite:sent", (from, to, foodieGroupId) => {
       console.log("an invite happened!");
       if (to === currentUser.name) {
@@ -92,14 +123,17 @@ const Food: NextPage = ({
       socket.off("server:invite:sent");
       socket.off("server:state:updated");
     };
-  });
+  }, []);
 
+  // set initial empty arrays for users if in a group,
+  // else, just empty array for the logged in user
+  // TODO: delete this logic, as the WS server can send the entire group state on initial render
   const [groupState, setGroupState] = useState(
     serverSideUsers.length
       ? serverSideUsers.reduce((acc, user) => {
           acc[user.name] = [];
           return acc;
-        }, {} as Record<string, any>)
+        }, {} as Record<string, Array<object>>)
       : { [loggedInName]: [] }
   );
   const [groupInvitations, setGroupInvitations] = useState<
@@ -181,7 +215,7 @@ const Food: NextPage = ({
                 ]}
                 name={name}
                 loggedInUser={currentUser}
-                groupState={groupState}
+                groupState={groupState as Record<string, SelectedRestaurant[]>}
                 setGroupState={setGroupState}
                 socket={socket}
               />
