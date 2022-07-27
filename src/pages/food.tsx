@@ -1,9 +1,9 @@
-import type { NextPage } from "next";
+import type { NextApiRequest, NextApiResponse, NextPage } from "next";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
 import { prisma } from "@/server/db/client";
 import { unstable_getServerSession as getServerSession } from "next-auth/next";
-import { authOptions as nextAuthOptions } from "@/pages/api/auth/[...nextauth]";
+import { makeAuthOptions as makeNextAuthOptions } from "@/pages/api/auth/[...nextauth]";
 import { trpc } from "@/utils/trpc";
 import { useEffect, useState } from "react";
 import type { GetServerSidePropsContext } from "next";
@@ -12,23 +12,22 @@ import MainSelector, { SelectedRestaurant } from "@/components/MainSelector";
 import { io } from "socket.io-client";
 import superjson from "superjson";
 
-type FoodProps = {
-  users: User[];
-  name: string;
-  currentUser: User;
-};
+type FoodProps = { user: User };
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // Get user id
   const session = await getServerSession(
     context.req,
     context.res,
-    nextAuthOptions
+    makeNextAuthOptions(
+      context.req as NextApiRequest,
+      context.res as NextApiResponse
+    )
   );
 
   // I tried to search for a solution at middleware level, but this will work
   // as it is the main page for the application
-  if (!session) {
+  if (!session || !session.user) {
     return {
       redirect: {
         destination: "/api/auth/signin",
@@ -36,29 +35,11 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
-  console.log("session from food.tsx", { session });
+  console.log("session.user ssr in plm", session.user);
 
-  // Find if that user has any foodie group associated
-  const foundUser = await prisma.user.findUnique({
-    where: { id: session?.user?.id },
-    include: { foodieGroup: { include: { users: true } } },
-  });
-
-  // for weird case where foodieGroupId was not null in the database, but was null in session
-  if (foundUser?.foodieGroupId !== session.user?.foodieGroupId) {
-    return {
-      redirect: {
-        destination: "/api/auth/signin",
-      },
-    };
-  }
-
-  const users = foundUser?.foodieGroup?.users || [];
   return {
     props: {
-      users: users,
-      name: session.user?.name || null,
-      currentUser: session.user,
+      user: session.user,
     },
   };
 }
@@ -73,22 +54,17 @@ interface InviteForm extends HTMLFormElement {
 
 const socket = io("ws://localhost:3001");
 
-const Food: NextPage = ({
-  users: serverSideUsers = [],
-  name: loggedInName,
-  currentUser,
-}: FoodProps | Record<string, never>) => {
+const Food: NextPage = (props: FoodProps | Record<string, never>) => {
   // set initial empty arrays for users if in a group,
   // else, just empty array for the logged in user
   // TODO: delete this logic, as the WS server can send the entire group state on initial render
-  const [groupState, setGroupState] = useState(
-    serverSideUsers.length
-      ? serverSideUsers.reduce((acc, user) => {
-          acc[user.name] = [];
-          return acc;
-        }, {} as Record<string, Array<object>>)
-      : { [loggedInName]: [] }
-  );
+
+  const [loggedInUser, setLoggedInUser] = useState(props.user);
+  const [groupState, setGroupState] = useState({
+    [loggedInUser?.name as string]: [],
+  } as Record<string, object[]>);
+
+  const currentName = loggedInUser?.name as string;
 
   useEffect(() => {
     socket.on("server:first:render", (stringifiedState) => {
@@ -99,21 +75,13 @@ const Food: NextPage = ({
       >;
 
       if (parsedState) {
-        console.log({ parsedState, groupState });
-        setGroupState(
-          Object.keys(groupState).reduce((acc, name) => {
-            const initialStateForUser = parsedState.get(name);
-            if (initialStateForUser) acc[name] = initialStateForUser;
-            else acc[name] = [];
-            return acc;
-          }, {} as Record<string, Array<object>>)
-        );
+        setGroupState(Object.fromEntries(parsedState));
       }
     });
 
     socket.on("server:invite:sent", (from, to, foodieGroupId) => {
       console.log("an invite happened!");
-      if (to === currentUser.name) {
+      if (to === currentName) {
         console.log("received invite sent for me!");
         setGroupInvitations([...groupInvitations, { from, to, foodieGroupId }]);
       } else {
@@ -127,7 +95,7 @@ const Food: NextPage = ({
         name,
         groupState,
       });
-      if (name === loggedInName) return;
+      if (name === currentName) return;
       const parsedState = superjson.parse(stringifiedState);
       setGroupState({
         ...groupState,
@@ -154,28 +122,37 @@ const Food: NextPage = ({
     } = event.currentTarget.elements;
 
     console.log("captured inputs from INVITE form:", { username });
-    inviteMutation.mutate(
-      { invitedName: username, currentName: loggedInName },
+    await inviteMutation.mutate(
+      { to: username, from: currentName },
       {
-        onSuccess() {
+        async onSuccess(newFoodieGroupId) {
           setIsComponentVisible(false);
+          console.log("WTFFFFFFFFFFFFFFFFFF", { loggedInUser });
+
+          setLoggedInUser({
+            ...loggedInUser,
+            foodieGroupId: newFoodieGroupId as string,
+          });
+
+          await fetch(`http://localhost:3000/api/auth/session?update`);
+
+          socket.emit(
+            "user:invite:sent",
+            currentName,
+            username,
+            // either foodie group was just created, either it existed from SSR
+            newFoodieGroupId || loggedInUser?.foodieGroupId, // loggedInUser?.foodieGroupId is still from closure
+            groupState[currentName]
+          );
+
+          // add to groupState as empty object
+          setGroupState({
+            ...groupState,
+            [username]: [],
+          });
         },
       }
     );
-
-    socket.emit(
-      "user:invite:sent",
-      loggedInName,
-      username,
-      currentUser.foodieGroupId,
-      groupState[loggedInName]
-    );
-
-    // add to groupState as empty object
-    setGroupState({
-      ...groupState,
-      [username]: [],
-    });
   };
 
   const { ref, isComponentVisible, setIsComponentVisible } =
@@ -199,7 +176,7 @@ const Food: NextPage = ({
       {/* FLEX WITH YOUR FRIENDS */}
       <div className="flex gap-2 justify-evenly">
         {Object.keys(groupState).map((name, index) => {
-          const isCurrentUser = name === loggedInName;
+          const isCurrentUser = name === currentName;
           return (
             <div
               className={`m-8 ${isCurrentUser && "border-red-600 border-2"}`}
@@ -220,7 +197,7 @@ const Food: NextPage = ({
                   { name: "4", items: [{ name: "coffee", price: 45.45 }] },
                 ]}
                 name={name}
-                loggedInUser={currentUser}
+                loggedInUser={loggedInUser}
                 groupState={groupState as Record<string, SelectedRestaurant[]>}
                 setGroupState={setGroupState}
                 socket={socket}
@@ -261,17 +238,31 @@ const Food: NextPage = ({
             <div>Invite received from {from}</div>
             <button
               onClick={() => {
-                acceptInviteMutation.mutate({ from });
+                acceptInviteMutation.mutate(
+                  { from },
+                  {
+                    async onSuccess(newFoodieGroupId) {
+                      setLoggedInUser({
+                        ...loggedInUser,
+                        foodieGroupId: newFoodieGroupId as string,
+                      });
 
-                socket.emit(
-                  "user:invite:accepted",
-                  to,
-                  foodieGroupId,
-                  groupState[to]
+                      await fetch(
+                        `http://localhost:3000/api/auth/session?update`
+                      );
+
+                      socket.emit(
+                        "user:invite:accepted",
+                        to,
+                        foodieGroupId,
+                        groupState[to]
+                      );
+
+                      // delete all pending invitations after accepting one
+                      setGroupInvitations([]);
+                    },
+                  }
                 );
-
-                // delete all pending invitations after accepting one
-                setGroupInvitations([]);
               }}
             >
               Accept

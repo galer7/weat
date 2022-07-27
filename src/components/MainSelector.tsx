@@ -47,13 +47,12 @@ const MainSelector = ({
 
   useEffect(() => {
     if (!isCurrentUser) return;
+    if (!loggedInUser.foodieGroupId) return;
     if (isFirstRender) {
       socket.emit("user:first:render", loggedInUser.foodieGroupId);
       setIsFirstRender(false);
       return;
     }
-
-    console.log("HEREEEE", groupState);
 
     console.log("fired emit user:state:updated", [
       loggedInName,
