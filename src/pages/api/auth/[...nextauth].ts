@@ -34,7 +34,8 @@ export const makeAuthOptions = (
       }
 
       console.log("req.url:::", req.url);
-      if (req.url === "/api/auth/session?update") {
+      // if login or update route is hit, search for existing foodieGroup
+      if (user || req.url === "/api/auth/session?update") {
         const user = await prisma.user.findFirst({
           where: { id: token.uid as string },
         });
@@ -81,7 +82,6 @@ export const makeAuthOptions = (
 });
 
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
-  console.log("inside next auth page", { url: req.url });
   // Do whatever you want here, before the request is passed down to `NextAuth`
   return await NextAuth(req, res, makeAuthOptions(req, res));
 }

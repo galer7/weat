@@ -1,9 +1,8 @@
 import type { NextApiRequest, NextApiResponse, NextPage } from "next";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
-import { prisma } from "@/server/db/client";
 import { unstable_getServerSession as getServerSession } from "next-auth/next";
-import { makeAuthOptions as makeNextAuthOptions } from "@/pages/api/auth/[...nextauth]";
+import { makeAuthOptions as makeNextAuthOptions } from "@/pages/api/oauth/[...nextauth]";
 import { trpc } from "@/utils/trpc";
 import { useEffect, useState } from "react";
 import type { GetServerSidePropsContext } from "next";
@@ -52,7 +51,7 @@ interface InviteForm extends HTMLFormElement {
   readonly elements: InviteFormFields;
 }
 
-const socket = io("ws://localhost:3001");
+const socket = io(process.env.NEXT_PUBLIC_WS_URL as string);
 
 const Food: NextPage = (props: FoodProps | Record<string, never>) => {
   // set initial empty arrays for users if in a group,
@@ -75,7 +74,16 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
       >;
 
       if (parsedState) {
-        setGroupState(Object.fromEntries(parsedState));
+        setGroupState(
+          Object.fromEntries(
+            new Map(
+              Array.from(parsedState).sort(([a]) => {
+                if (a === loggedInUser.name) return -1;
+                return 1;
+              })
+            )
+          )
+        );
       }
     });
 
@@ -127,14 +135,13 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
       {
         async onSuccess(newFoodieGroupId) {
           setIsComponentVisible(false);
-          console.log("WTFFFFFFFFFFFFFFFFFF", { loggedInUser });
-
           setLoggedInUser({
             ...loggedInUser,
             foodieGroupId: newFoodieGroupId as string,
           });
 
-          await fetch(`http://localhost:3000/api/auth/session?update`);
+          await fetch(`${process.env.NEXTAUTH_URL}/session?update`);
+          console.log({ newFoodieGroupId });
 
           socket.emit(
             "user:invite:sent",
@@ -241,15 +248,11 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
                 acceptInviteMutation.mutate(
                   { from },
                   {
-                    async onSuccess(newFoodieGroupId) {
+                    onSuccess(newFoodieGroupId) {
                       setLoggedInUser({
                         ...loggedInUser,
                         foodieGroupId: newFoodieGroupId as string,
                       });
-
-                      await fetch(
-                        `http://localhost:3000/api/auth/session?update`
-                      );
 
                       socket.emit(
                         "user:invite:accepted",

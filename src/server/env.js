@@ -4,7 +4,6 @@
  * It has to be a `.js`-file to be imported there.
  */
 const { envSchema } = require("./env-schema");
-
 const env = envSchema.safeParse(process.env);
 
 const formatErrors = (
