@@ -2,26 +2,13 @@ import { User } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Socket } from "socket.io-client";
 import { setLocalGroupState, getLocalGroupState } from "@/utils/localStorage";
-
-type FoodItem = {
-  name: string;
-  price: number;
-};
-
-type Restaurant = {
-  name: string;
-  items: FoodItem[];
-};
-
-type SelectedFoodItem = {
-  originalIndex: number;
-} & FoodItem;
-
-type SelectedRestaurant = {
-  name: string;
-  items: SelectedFoodItem[];
-  originalIndex: number;
-};
+import type {
+  Restaurant,
+  GroupUserState,
+  SelectedRestaurant,
+  SelectedFoodItem,
+  FoodItem,
+} from "@/utils/types";
 
 const MainSelector = ({
   restaurants,
@@ -34,8 +21,8 @@ const MainSelector = ({
   restaurants: Restaurant[];
   name: string;
   loggedInUser: User;
-  groupState: Record<string, SelectedRestaurant[]>;
-  setGroupState: any;
+  groupState: Record<string, GroupUserState>;
+  setGroupState: (newGroupState: Record<string, GroupUserState>) => void;
   socket: Socket;
 }) => {
   // TODO: use a Proxy on the restaurants array so that we can
@@ -43,7 +30,8 @@ const MainSelector = ({
   const loggedInName = loggedInUser.name;
   const isCurrentUser = name === loggedInName;
   const loggedInUserState = groupState[loggedInName];
-  const currentUserState = groupState[name] as SelectedRestaurant[];
+  const currentUserState = groupState[name]
+    ?.restaurants as SelectedRestaurant[];
   const [isFirstRender, setIsFirstRender] = useState(true);
 
   useEffect(() => {
@@ -89,19 +77,22 @@ const MainSelector = ({
 
     setGroupState({
       ...groupState,
-      [name]: [
-        ...currentUserState,
-        {
-          name: restaurants[currentUserState.length]?.name,
-          items: [
-            {
-              ...restaurants[currentUserState.length]?.items[0],
-              originalIndex: 0,
-            },
-          ],
-          originalIndex: currentUserState.length,
-        },
-      ],
+      [name]: {
+        ...(groupState[name] as GroupUserState),
+        restaurants: [
+          ...currentUserState,
+          {
+            name: restaurants[currentUserState.length]?.name as string,
+            items: [
+              {
+                ...(restaurants[currentUserState.length]?.items[0] as FoodItem),
+                originalIndex: 0,
+              },
+            ],
+            originalIndex: currentUserState.length,
+          },
+        ],
+      },
     });
   };
 
@@ -109,7 +100,10 @@ const MainSelector = ({
     if (index < 0 || index > currentUserState.length - 1) return;
     setGroupState({
       ...groupState,
-      [name]: currentUserState?.filter((_, id) => id !== index),
+      [name]: {
+        ...(groupState[name] as GroupUserState),
+        restaurants: currentUserState?.filter((_, id) => id !== index),
+      },
     });
   };
 
@@ -121,19 +115,22 @@ const MainSelector = ({
 
     setGroupState({
       ...groupState,
-      [name]: currentUserState?.map((restaurant, id) => {
-        if (id !== index) return restaurant;
-        return {
-          name: restaurants[rawNewIndex]?.name as string,
-          items: [
-            {
-              ...restaurants[rawNewIndex]?.items[0],
-              originalIndex: 0,
-            } as SelectedFoodItem,
-          ],
-          originalIndex: rawNewIndex,
-        };
-      }),
+      [name]: {
+        ...(groupState[name] as GroupUserState),
+        restaurants: currentUserState?.map((restaurant, id) => {
+          if (id !== index) return restaurant;
+          return {
+            name: restaurants[rawNewIndex]?.name as string,
+            items: [
+              {
+                ...restaurants[rawNewIndex]?.items[0],
+                originalIndex: 0,
+              } as SelectedFoodItem,
+            ],
+            originalIndex: rawNewIndex,
+          };
+        }),
+      },
     });
   };
 
@@ -144,32 +141,38 @@ const MainSelector = ({
 
     setGroupState({
       ...groupState,
-      [name]: currentUserState.map((restaurant, id) => {
-        if (id !== restaurantIndex) return restaurant;
-        return {
-          ...restaurant,
-          items: [
-            ...restaurant.items,
-            {
-              ...restaurants[originalRestaurantIndex]?.items[0],
-              originalIndex: 0,
-            } as SelectedFoodItem,
-          ],
-        };
-      }),
+      [name]: {
+        ...(groupState[name] as GroupUserState),
+        restaurants: currentUserState.map((restaurant, id) => {
+          if (id !== restaurantIndex) return restaurant;
+          return {
+            ...restaurant,
+            items: [
+              ...restaurant.items,
+              {
+                ...restaurants[originalRestaurantIndex]?.items[0],
+                originalIndex: 0,
+              } as SelectedFoodItem,
+            ],
+          };
+        }),
+      },
     });
   };
 
   const removeFoodItem = (restaurantIndex: number, foodItemIndex: number) => {
     setGroupState({
       ...groupState,
-      [name]: currentUserState?.map((restaurant, id) => {
-        if (id !== restaurantIndex) return restaurant;
-        return {
-          ...restaurant,
-          items: restaurant.items.filter((_, id) => id !== foodItemIndex),
-        };
-      }),
+      [name]: {
+        ...(groupState[name] as GroupUserState),
+        restaurants: currentUserState?.map((restaurant, id) => {
+          if (id !== restaurantIndex) return restaurant;
+          return {
+            ...restaurant,
+            items: restaurant.items.filter((_, id) => id !== foodItemIndex),
+          };
+        }),
+      },
     });
   };
 
@@ -195,21 +198,24 @@ const MainSelector = ({
 
     setGroupState({
       ...groupState,
-      [name]: currentUserState?.map((restaurant, id) => {
-        if (id !== restaurantIndex) return restaurant;
-        return {
-          ...restaurant,
-          items: restaurant.items.map((item, id) => {
-            if (id !== foodItemIndex) return item;
-            return {
-              ...restaurants[originalRestaurantIndex]?.items[
-                rawNewFoodItemIndex
-              ],
-              originalIndex: rawNewFoodItemIndex,
-            } as SelectedFoodItem;
-          }),
-        };
-      }),
+      [name]: {
+        ...(groupState[name] as GroupUserState),
+        restaurants: currentUserState?.map((restaurant, id) => {
+          if (id !== restaurantIndex) return restaurant;
+          return {
+            ...restaurant,
+            items: restaurant.items.map((item, id) => {
+              if (id !== foodItemIndex) return item;
+              return {
+                ...restaurants[originalRestaurantIndex]?.items[
+                  rawNewFoodItemIndex
+                ],
+                originalIndex: rawNewFoodItemIndex,
+              } as SelectedFoodItem;
+            }),
+          };
+        }),
+      },
     });
   };
 

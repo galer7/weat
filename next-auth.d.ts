@@ -8,6 +8,8 @@ declare module "next-auth" {
     user?: {
       id?: string;
       foodieGroupId?: string;
+      isInviteAccepted?: boolean;
+      isFounder?: boolean;
     } & DefaultSession["user"];
   }
 }

@@ -47,7 +47,10 @@ export const foodRouter = createRouter()
               });
               await prisma.user.update({
                 where: { name: from },
-                data: { foodieGroupId: newFoodieGroup.id },
+                data: {
+                  foodieGroupId: newFoodieGroup.id,
+                  isFounder: true,
+                },
               });
 
               await fetch(`${process.env.NEXTAUTH_URL}/session?update`);
@@ -74,7 +77,7 @@ export const foodRouter = createRouter()
 
       await prisma.user.update({
         where: { id: session?.user?.id },
-        data: { foodieGroupId: sender.foodieGroupId },
+        data: { foodieGroupId: sender.foodieGroupId, isInviteAccepted: true },
       });
 
       return sender.foodieGroupId;
@@ -85,7 +88,7 @@ export const foodRouter = createRouter()
     async resolve({ ctx: { session } }) {
       await prisma.user.update({
         where: { id: session?.user?.id },
-        data: { foodieGroupId: null },
+        data: { foodieGroupId: null, isFounder: null, isInviteAccepted: null },
       });
 
       const count = await prisma.user.count({

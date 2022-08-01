@@ -7,16 +7,14 @@ import { trpc } from "@/utils/trpc";
 import { useEffect, useState } from "react";
 import type { GetServerSidePropsContext } from "next";
 import { User } from "@prisma/client";
-import MainSelector, { SelectedRestaurant } from "@/components/MainSelector";
+import MainSelector from "@/components/MainSelector";
 import { io } from "socket.io-client";
 import superjson from "superjson";
 import { signOut } from "next-auth/react";
 import { setLocalGroupState } from "@/utils/localStorage";
+import type { GroupUserState } from "@/utils/types";
 
 type FoodProps = { user: User };
-type LoggedInUser = {
-  foodieGroupId: string | null;
-} & User;
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // Get user id
@@ -62,10 +60,10 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
   // set initial empty arrays for users if in a group,
   // else, just empty array for the logged in user
 
-  const [loggedInUser, setLoggedInUser] = useState<LoggedInUser>(props.user);
+  const [loggedInUser, setLoggedInUser] = useState<User>(props.user);
   const [groupState, setGroupState] = useState({
-    [loggedInUser.name as string]: [],
-  } as Record<string, SelectedRestaurant[]>);
+    [loggedInUser.name as string]: { isInviteAccepted: true, restaurants: [] },
+  } as Record<string, GroupUserState>);
 
   const currentName = loggedInUser?.name as string;
 
@@ -74,9 +72,11 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
       console.log("first render!", { stringifiedState });
       const parsedState = superjson.parse(stringifiedState) as Map<
         string,
-        SelectedRestaurant[]
+        GroupUserState
       >;
 
+      // on first render, state comes as a ES6 Map
+      // On the WS server, the group state is persisted as a ES6 Map
       if (parsedState) {
         setGroupState(
           Object.fromEntries(
@@ -118,6 +118,11 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
         // is not activated because the loggedInUser is not modified here
         if (Object.keys(restOfGroupState).length === 1) {
           setLocalGroupState(restOfGroupState);
+
+          setLoggedInUser({
+            ...loggedInUser,
+            foodieGroupId: null,
+          });
         }
       } else {
         setGroupState({
@@ -171,7 +176,7 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
           // add to groupState as empty object
           setGroupState({
             ...groupState,
-            [username]: [],
+            [username]: { isInviteAccepted: false, restaurants: [] },
           });
         },
       }
@@ -218,13 +223,13 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
                         setGroupState({
                           [loggedInUser.name]: groupState[
                             loggedInUser.name
-                          ] as SelectedRestaurant[],
+                          ] as GroupUserState,
                         });
 
                         setLocalGroupState({
                           [loggedInUser.name]: groupState[
                             loggedInUser.name
-                          ] as SelectedRestaurant[],
+                          ] as GroupUserState,
                         });
                       },
                     }
@@ -242,17 +247,20 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
                   {},
                   {
                     onSuccess() {
-                      socket.emit(
-                        "user:state:updated",
-                        loggedInUser.name,
-                        loggedInUser.foodieGroupId
-                        // pass undefined as the 3rd argument, so that we can delete this user's state
-                      );
+                      // users that do not belong to any group can logout DUUH
+                      if (loggedInUser.foodieGroupId) {
+                        socket.emit(
+                          "user:state:updated",
+                          loggedInUser.name,
+                          loggedInUser.foodieGroupId
+                          // pass undefined as the 3rd argument, so that we can delete this user's state
+                        );
 
-                      setLoggedInUser({
-                        ...loggedInUser,
-                        foodieGroupId: null,
-                      });
+                        setLoggedInUser({
+                          ...loggedInUser,
+                          foodieGroupId: null,
+                        });
+                      }
 
                       signOut();
                     },
@@ -277,25 +285,29 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
               key={index}
             >
               <div className="m-4">{name}</div>
-              <MainSelector
-                restaurants={[
-                  {
-                    name: "1",
-                    items: [
-                      { name: "sushi", price: 12.12 },
-                      { name: "sushi2", price: 122.122 },
-                    ],
-                  },
-                  { name: "2", items: [{ name: "burger", price: 23.23 }] },
-                  { name: "3", items: [{ name: "sandwich", price: 34.34 }] },
-                  { name: "4", items: [{ name: "coffee", price: 45.45 }] },
-                ]}
-                name={name}
-                loggedInUser={loggedInUser}
-                groupState={groupState as Record<string, SelectedRestaurant[]>}
-                setGroupState={setGroupState}
-                socket={socket}
-              />
+              {groupState[name]?.isInviteAccepted ? (
+                <MainSelector
+                  restaurants={[
+                    {
+                      name: "1",
+                      items: [
+                        { name: "sushi", price: 12.12 },
+                        { name: "sushi2", price: 122.122 },
+                      ],
+                    },
+                    { name: "2", items: [{ name: "burger", price: 23.23 }] },
+                    { name: "3", items: [{ name: "sandwich", price: 34.34 }] },
+                    { name: "4", items: [{ name: "coffee", price: 45.45 }] },
+                  ]}
+                  name={name}
+                  loggedInUser={loggedInUser}
+                  groupState={groupState}
+                  setGroupState={setGroupState}
+                  socket={socket}
+                />
+              ) : (
+                <div>Loading...</div>
+              )}
               {/* MODAL FOR INVITE */}
               <div ref={ref}>
                 {isComponentVisible && (
