@@ -10,11 +10,19 @@
 - [x] ws: persist foodieGroup in db
 - [x] add google provider
 - [x] implement signout logics: remove user from foodieGroup + ws update state after. if the group has only one user left, delete the group completely
-- [ ] add `accepted_invite` boolean prop on WS and React state for other users
-- [ ] ws: implement expiration after x seconds of inactivity
-- [ ] find solutions for a on-typing-updating list for users + add online/offline green dot. will probably need to use next-auth's `Session` model
+- [ ] bug: first add restaurant press after user joins the group is not registered!
+- [x] save user state to local storage
+- [ ] add leave group button
+- [ ] add `accepted_invite` boolean prop on WS and React state for other users, so we can have a pending animation
+- [ ] implement online users list on invite submit form
+- [ ] add reject invite button
+- [ ] add user events popup notifications (e.g. user joined your group, user left your group, user is ready to order)
+- [ ] add group orders list
 - [ ] make use of CSRF tokens from next-auth. first learn where they are helpful
 - [ ] design selector component
+- [ ] make sure all app routes are protected
+
+Will not implement:
 - [ ] map user state to its account id, not his name (e.g. we can have 2  Google accounts with the name Gabriel Galer)
 
 bugs

@@ -1,6 +1,7 @@
 import { User } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { Socket } from "socket.io-client";
+import { setLocalGroupState, getLocalGroupState } from "@/utils/localStorage";
 
 type FoodItem = {
   name: string;
@@ -47,26 +48,40 @@ const MainSelector = ({
 
   useEffect(() => {
     if (!isCurrentUser) return;
-    if (!loggedInUser.foodieGroupId) return;
-    if (isFirstRender) {
-      socket.emit("user:first:render", loggedInUser.foodieGroupId);
-      setIsFirstRender(false);
-      return;
+    console.log("loggedInUser in useeffect", { loggedInUser });
+    if (!loggedInUser.foodieGroupId) {
+      // local storage while not in a group
+      if (isFirstRender) {
+        setIsFirstRender(false);
+        const parsedLocalStorage = getLocalGroupState();
+        if (!parsedLocalStorage) return;
+
+        setGroupState(parsedLocalStorage);
+      }
+
+      setLocalGroupState(groupState);
+    } else {
+      if (isFirstRender) {
+        setIsFirstRender(false);
+        socket.emit("user:first:render", loggedInUser.foodieGroupId);
+        return;
+      }
+
+      console.log("fired emit user:state:updated", [
+        loggedInName,
+        loggedInUser.foodieGroupId,
+        loggedInUserState,
+      ]);
+
+      console.log({ loggedInUserState });
+      socket.emit(
+        "user:state:updated",
+        loggedInName,
+        loggedInUser.foodieGroupId,
+        loggedInUserState
+      );
     }
-
-    console.log("fired emit user:state:updated", [
-      loggedInName,
-      loggedInUser.foodieGroupId,
-      loggedInUserState,
-    ]);
-
-    console.log({ loggedInUserState });
-    socket.emit(
-      "user:state:updated",
-      loggedInName,
-      loggedInUser.foodieGroupId,
-      loggedInUserState
-    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loggedInUserState]);
 
   const addRestaurant = () => {

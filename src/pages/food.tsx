@@ -11,8 +11,12 @@ import MainSelector, { SelectedRestaurant } from "@/components/MainSelector";
 import { io } from "socket.io-client";
 import superjson from "superjson";
 import { signOut } from "next-auth/react";
+import { setLocalGroupState } from "@/utils/localStorage";
 
 type FoodProps = { user: User };
+type LoggedInUser = {
+  foodieGroupId: string | null;
+} & User;
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // Get user id
@@ -58,7 +62,7 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
   // set initial empty arrays for users if in a group,
   // else, just empty array for the logged in user
 
-  const [loggedInUser, setLoggedInUser] = useState(props.user);
+  const [loggedInUser, setLoggedInUser] = useState<LoggedInUser>(props.user);
   const [groupState, setGroupState] = useState({
     [loggedInUser?.name as string]: [],
   } as Record<string, object[]>);
@@ -109,6 +113,12 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
       if (!parsedState) {
         const { [name]: _, ...restOfGroupState } = groupState;
         setGroupState(restOfGroupState);
+
+        // need to save to storage here, because the useEffect from MainSelector
+        // is not activated because the loggedInUser is not modified here
+        if (Object.keys(restOfGroupState).length === 1) {
+          setLocalGroupState(restOfGroupState);
+        }
       } else {
         setGroupState({
           ...groupState,
@@ -199,6 +209,12 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
                         loggedInUser.foodieGroupId
                         // pass undefined as the 3rd argument, so that we can delete this user's state
                       );
+
+                      setLoggedInUser({
+                        ...loggedInUser,
+                        foodieGroupId: null,
+                      });
+
                       signOut();
                     },
                   }
