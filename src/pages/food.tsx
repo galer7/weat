@@ -10,6 +10,7 @@ import { User } from "@prisma/client";
 import MainSelector, { SelectedRestaurant } from "@/components/MainSelector";
 import { io } from "socket.io-client";
 import superjson from "superjson";
+import { signOut } from "next-auth/react";
 
 type FoodProps = { user: User };
 
@@ -104,10 +105,16 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
       });
       if (name === currentName) return;
       const parsedState = superjson.parse(stringifiedState);
-      setGroupState({
-        ...groupState,
-        [name]: parsedState,
-      });
+
+      if (!parsedState) {
+        const { [name]: _, ...restOfGroupState } = groupState;
+        setGroupState(restOfGroupState);
+      } else {
+        setGroupState({
+          ...groupState,
+          [name]: parsedState,
+        });
+      }
     });
 
     return () => {
@@ -165,16 +172,42 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
     useComponentVisible<HTMLDivElement>(false);
   const inviteMutation = trpc.useMutation("food.invite");
   const acceptInviteMutation = trpc.useMutation("food.accept-invite");
+  const leaveGroupMutation = trpc.useMutation("food.leave-group");
 
   return (
     <div>
       {/* HEADER */}
       <div className="bg-black w-full flex justify-between">
         <div className="text-white p-8 px-10 text-xl font-bold">WEAT</div>
-        <div className="text-white p-8 px-10 text-xl font-bold">
-          <button onClick={() => setIsComponentVisible(!isComponentVisible)}>
-            INVITE
-          </button>
+        <div className="flex justify-between">
+          <div className="text-white p-8 px-10 text-xl font-bold">
+            <button onClick={() => setIsComponentVisible(!isComponentVisible)}>
+              INVITE
+            </button>
+          </div>
+          <div className="text-white p-8 px-10 text-xl font-bold">
+            {" "}
+            <button
+              onClick={() => {
+                leaveGroupMutation.mutate(
+                  {},
+                  {
+                    onSuccess() {
+                      socket.emit(
+                        "user:state:updated",
+                        loggedInUser.name,
+                        loggedInUser.foodieGroupId
+                        // pass undefined as the 3rd argument, so that we can delete this user's state
+                      );
+                      signOut();
+                    },
+                  }
+                );
+              }}
+            >
+              LOGOUT
+            </button>
+          </div>
         </div>
       </div>
 

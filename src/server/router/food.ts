@@ -79,4 +79,23 @@ export const foodRouter = createRouter()
 
       return sender.foodieGroupId;
     },
+  })
+  .mutation("leave-group", {
+    input: z.object({}),
+    async resolve({ ctx: { session } }) {
+      await prisma.user.update({
+        where: { id: session?.user?.id },
+        data: { foodieGroupId: null },
+      });
+
+      const count = await prisma.user.count({
+        where: { foodieGroupId: session?.user?.foodieGroupId },
+      });
+
+      if (count === 1) {
+        await prisma.foodieGroup.delete({
+          where: { id: session?.user?.foodieGroupId },
+        });
+      }
+    },
   });
