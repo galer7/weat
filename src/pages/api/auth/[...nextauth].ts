@@ -1,83 +1,34 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import type { NextApiRequest, NextApiResponse } from "next";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from "bcrypt";
+import GoogleProvider from "next-auth/providers/google";
 
 // Prisma adapter for NextAuth, optional and can be removed
 import { prisma } from "@/server/db/client";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { User } from "@prisma/client";
 
 export const makeAuthOptions = (
   req: NextApiRequest,
   res: NextApiResponse
 ): NextAuthOptions => ({
-  // Include user.id on session
   callbacks: {
-    session({ session, token }) {
-      console.log("session", { session, token });
-      if (session?.user) {
-        session.user.id = token.uid as string;
-
-        if (token.foodieGroupId) {
-          session.user.foodieGroupId = token.foodieGroupId as string;
-        }
-      }
+    session({ session, user }) {
+      console.log("session", { session, user });
+      (session.user as User).foodieGroupId = user.foodieGroupId as string;
+      (session.user as User).id = user.id;
       return session;
     },
     redirect(params) {
       return `${params.baseUrl}/food`;
     },
-    async jwt({ token, user }) {
-      console.log("jwt", { user, token });
-      if (user) {
-        // just after login, fresh data. persist data from login in jwt
-        token.uid = user.id;
-      }
-
-      console.log("req.url:::", req.url);
-      // if login or update route is hit, search for existing foodieGroup
-      if (user || req.url === "/api/auth/session?update") {
-        const user = await prisma.user.findFirst({
-          where: { id: token.uid as string },
-        });
-        token.foodieGroupId = user?.foodieGroupId;
-      }
-      return token;
-    },
   },
   providers: [
-    // ...add more providers here
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: {
-          label: "Email",
-          type: "text",
-          placeholder: "Enter your email",
-        },
-        password: {
-          label: "Password",
-          type: "password",
-          placeholder: "Enter your password",
-        },
-      },
-      async authorize(credentials, _req) {
-        const user = await prisma.user.findFirst({
-          where: {
-            email: credentials?.email,
-          },
-        });
-
-        if (!user || !credentials?.password) return null;
-        const isSamePassword = await compare(
-          credentials.password,
-          user.password
-        );
-        if (!isSamePassword) return null;
-
-        return user;
-      },
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
   ],
+  adapter: PrismaAdapter(prisma),
   debug: true,
 });
 

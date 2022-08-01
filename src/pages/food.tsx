@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse, NextPage } from "next";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
 import { unstable_getServerSession as getServerSession } from "next-auth/next";
-import { makeAuthOptions as makeNextAuthOptions } from "@/pages/api/oauth/[...nextauth]";
+import { makeAuthOptions as makeNextAuthOptions } from "@/pages/api/auth/[...nextauth]";
 import { trpc } from "@/utils/trpc";
 import { useEffect, useState } from "react";
 import type { GetServerSidePropsContext } from "next";
