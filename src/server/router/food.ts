@@ -5,54 +5,60 @@ import { z } from "zod";
 export const foodRouter = createRouter()
   .mutation("invite", {
     input: z.object({
-      to: z.string(),
+      to: z.array(z.string()),
       from: z.string(),
     }),
     async resolve({ input: { to, from }, ctx: { session } }) {
-      try {
-        if (to === from) return;
-        // Find if the invited user exists
-        const foundUser = await prisma.user.findFirst({
-          where: { name: to },
-        });
-        if (!foundUser) {
-          console.log(`there are no users with name ${to}`);
-          return;
-        }
-
-        const currentUser = await prisma.user.findFirst({
-          where: { id: session?.user?.id },
-          include: { foodieGroup: { include: { users: true } } },
-        });
-
-        // If the foodie group doesn't exist, create it
-        // If in a group alone, allow to create a new group and delete old one
-        if (
-          !currentUser?.foodieGroupId ||
-          (currentUser.foodieGroup?.users &&
-            currentUser.foodieGroup?.users.length === 1 &&
-            currentUser.foodieGroup.users[0]?.id === currentUser.id)
-        ) {
-          if (currentUser?.foodieGroupId) {
-            await prisma.foodieGroup.delete({
-              where: {
-                id: currentUser.foodieGroupId,
-              },
+      return Promise.all(
+        to.map(async (toUser) => {
+          try {
+            if (toUser === from) return;
+            // Find if the invited user exists
+            const foundUser = await prisma.user.findFirst({
+              where: { name: toUser },
             });
+            if (!foundUser) {
+              console.log(`there are no users with name ${to}`);
+              return;
+            }
+
+            const currentUser = await prisma.user.findFirst({
+              where: { id: session?.user?.id },
+              include: { foodieGroup: { include: { users: true } } },
+            });
+
+            // If the foodie group doesn't exist, create it
+            // If in a group alone, allow to create a new group and delete old one
+            if (
+              !currentUser?.foodieGroupId ||
+              (currentUser.foodieGroup?.users &&
+                currentUser.foodieGroup?.users.length === 1 &&
+                currentUser.foodieGroup.users[0]?.id === currentUser.id)
+            ) {
+              if (currentUser?.foodieGroupId) {
+                await prisma.foodieGroup.delete({
+                  where: {
+                    id: currentUser.foodieGroupId,
+                  },
+                });
+              }
+              const newFoodieGroup = await prisma.foodieGroup.create({
+                data: {},
+              });
+              await prisma.user.update({
+                where: { name: from },
+                data: { foodieGroupId: newFoodieGroup.id },
+              });
+
+              await fetch(`${process.env.NEXTAUTH_URL}/session?update`);
+
+              return newFoodieGroup.id;
+            }
+          } catch (error) {
+            console.log("error when registering user", error);
           }
-          const newFoodieGroup = await prisma.foodieGroup.create({ data: {} });
-          await prisma.user.update({
-            where: { name: from },
-            data: { foodieGroupId: newFoodieGroup.id },
-          });
-
-          await fetch(`${process.env.NEXTAUTH_URL}/session?update`);
-
-          return newFoodieGroup.id;
-        }
-      } catch (error) {
-        console.log("error when registering user", error);
-      }
+        })
+      );
     },
   })
   .mutation("accept-invite", {

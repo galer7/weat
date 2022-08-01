@@ -56,7 +56,6 @@ const socket = io(process.env.NEXT_PUBLIC_WS_URL as string);
 const Food: NextPage = (props: FoodProps | Record<string, never>) => {
   // set initial empty arrays for users if in a group,
   // else, just empty array for the logged in user
-  // TODO: delete this logic, as the WS server can send the entire group state on initial render
 
   const [loggedInUser, setLoggedInUser] = useState(props.user);
   const [groupState, setGroupState] = useState({
@@ -131,9 +130,9 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
 
     console.log("captured inputs from INVITE form:", { username });
     await inviteMutation.mutate(
-      { to: username, from: currentName },
+      { to: [username], from: currentName },
       {
-        async onSuccess(newFoodieGroupId) {
+        async onSuccess([newFoodieGroupId]) {
           setIsComponentVisible(false);
           setLoggedInUser({
             ...loggedInUser,

@@ -5,5 +5,17 @@ export const usersRouter = createRouter()
   .query("getAll", {
     async resolve() {
       return prisma.user.findMany({ where: {}, select: { name: true } });
-    }
+    },
+  })
+  .query("getAllOnline", {
+    async resolve() {
+      return prisma.user.findMany({
+        where: {
+          sessions: {
+            some: {},
+          },
+        },
+        select: { name: true },
+      });
+    },
   });

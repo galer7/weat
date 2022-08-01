@@ -1,40 +1,40 @@
 import { createRouter } from "./context";
-import { hash } from 'bcrypt';
+import { hash } from "bcrypt";
 import { prisma } from "@/server/db/client";
-import { z } from 'zod';
-import crypto from 'crypto';
+import { z } from "zod";
+import crypto from "crypto";
 
 export const authRouter = createRouter()
   .mutation("register", {
     input: z.object({
       email: z.string().email(),
-      password: z.string()
+      password: z.string(),
     }),
     async resolve({ input: { email, password } }) {
       try {
-        console.log('received form inputs from client:', { email, password })
+        console.log("received form inputs from client:", { email, password });
         const foundUser = await prisma.user.findFirst({ where: { email } });
-        console.log({ foundUser })
+        console.log({ foundUser });
         if (foundUser) {
-          console.log('there exists a user with this email already')
+          console.log("there exists a user with this email already");
           return;
         }
 
-        const passwordHash = await hash(password, 10)
+        const passwordHash = await hash(password, 10);
         return prisma.user.create({
           data: {
             email,
             password: passwordHash,
-            name: crypto.randomBytes(2).toString("hex")
-          }
-        })
+            name: crypto.randomBytes(2).toString("hex"),
+          },
+        });
       } catch (error) {
-        console.log('error when registering user', error);
+        console.log("error when registering user", error);
       }
-    }
+    },
   })
   .query("getSession", {
     resolve({ ctx }) {
       return ctx.session;
     },
-  })
+  });
