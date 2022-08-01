@@ -12,7 +12,7 @@
 - [x] implement signout logics: remove user from foodieGroup + ws update state after. if the group has only one user left, delete the group completely
 - [ ] bug: first add restaurant press after user joins the group is not registered!
 - [x] save user state to local storage
-- [ ] add leave group button
+- [x] add leave group button
 - [ ] add `accepted_invite` boolean prop on WS and React state for other users, so we can have a pending animation
 - [ ] implement online users list on invite submit form
 - [ ] add reject invite button

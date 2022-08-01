@@ -64,8 +64,8 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
 
   const [loggedInUser, setLoggedInUser] = useState<LoggedInUser>(props.user);
   const [groupState, setGroupState] = useState({
-    [loggedInUser?.name as string]: [],
-  } as Record<string, object[]>);
+    [loggedInUser.name as string]: [],
+  } as Record<string, SelectedRestaurant[]>);
 
   const currentName = loggedInUser?.name as string;
 
@@ -74,7 +74,7 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
       console.log("first render!", { stringifiedState });
       const parsedState = superjson.parse(stringifiedState) as Map<
         string,
-        Array<object>
+        SelectedRestaurant[]
       >;
 
       if (parsedState) {
@@ -188,15 +188,54 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
     <div>
       {/* HEADER */}
       <div className="bg-black w-full flex justify-between">
-        <div className="text-white p-8 px-10 text-xl font-bold">WEAT</div>
-        <div className="flex justify-between">
-          <div className="text-white p-8 px-10 text-xl font-bold">
+        <div className="text-white m-8 text-xl font-bold">WEAT</div>
+        <div className="flex justify-end gap-1">
+          <div className="text-white m-8  text-xl font-bold">
             <button onClick={() => setIsComponentVisible(!isComponentVisible)}>
               INVITE
             </button>
           </div>
-          <div className="text-white p-8 px-10 text-xl font-bold">
-            {" "}
+          {loggedInUser.foodieGroupId && Object.keys(groupState).length >= 2 && (
+            <div className="text-white m-8  text-xl font-bold">
+              <button
+                onClick={() => {
+                  leaveGroupMutation.mutate(
+                    {},
+                    {
+                      onSuccess() {
+                        socket.emit(
+                          "user:state:updated",
+                          loggedInUser.name,
+                          loggedInUser.foodieGroupId
+                          // pass undefined as the 3rd argument, so that we can delete this user's state
+                        );
+
+                        setLoggedInUser({
+                          ...loggedInUser,
+                          foodieGroupId: null,
+                        });
+
+                        setGroupState({
+                          [loggedInUser.name]: groupState[
+                            loggedInUser.name
+                          ] as SelectedRestaurant[],
+                        });
+
+                        setLocalGroupState({
+                          [loggedInUser.name]: groupState[
+                            loggedInUser.name
+                          ] as SelectedRestaurant[],
+                        });
+                      },
+                    }
+                  );
+                }}
+              >
+                LEAVE GROUP
+              </button>
+            </div>
+          )}
+          <div className="text-white m-8  text-xl font-bold">
             <button
               onClick={() => {
                 leaveGroupMutation.mutate(
