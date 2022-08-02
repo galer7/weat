@@ -188,6 +188,7 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
   const inviteMutation = trpc.useMutation("food.invite");
   const acceptInviteMutation = trpc.useMutation("food.accept-invite");
   const leaveGroupMutation = trpc.useMutation("food.leave-group");
+  const refuseInviteMutation = trpc.useMutation("food.refuse-invite");
 
   return (
     <div>
@@ -347,10 +348,10 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
                 acceptInviteMutation.mutate(
                   { from },
                   {
-                    onSuccess(newFoodieGroupId) {
+                    onSuccess() {
                       setLoggedInUser({
                         ...loggedInUser,
-                        foodieGroupId: newFoodieGroupId as string,
+                        foodieGroupId,
                       });
 
                       socket.emit(
@@ -368,6 +369,34 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
               }}
             >
               Accept
+            </button>
+            <button
+              onClick={() => {
+                refuseInviteMutation.mutate(
+                  { from },
+                  {
+                    onSuccess() {
+                      socket.emit("user:invite:refused", to, foodieGroupId);
+
+                      // delete just the refused invitation
+                      setGroupInvitations(
+                        groupInvitations.filter(
+                          ({ from: cFrom, foodieGroupId: cFoodieGroupId }) => {
+                            if (
+                              cFrom === from &&
+                              cFoodieGroupId === foodieGroupId
+                            )
+                              return false;
+                            return true;
+                          }
+                        )
+                      );
+                    },
+                  }
+                );
+              }}
+            >
+              Refuse
             </button>
           </div>
         );

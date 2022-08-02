@@ -14,7 +14,7 @@
 - [x] save user state to local storage
 - [x] add leave group button
 - [x] add `accepted_invite` boolean prop on WS and React state for other users, so we can have a pending animation
-- [ ] add reject invite button
+- [x] add refuse invite button
 - [ ] add user events popup notifications (e.g. user joined your group, user left your group, user is ready to order)
 - [ ] implement online users list on invite submit form
 - [ ] add group orders list

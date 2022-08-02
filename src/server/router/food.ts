@@ -45,11 +45,11 @@ export const foodRouter = createRouter()
               const newFoodieGroup = await prisma.foodieGroup.create({
                 data: {},
               });
+
               await prisma.user.update({
                 where: { name: from },
                 data: {
                   foodieGroupId: newFoodieGroup.id,
-                  isFounder: true,
                 },
               });
 
@@ -77,8 +77,32 @@ export const foodRouter = createRouter()
 
       await prisma.user.update({
         where: { id: session?.user?.id },
-        data: { foodieGroupId: sender.foodieGroupId, isInviteAccepted: true },
+        data: { foodieGroupId: sender.foodieGroupId },
       });
+    },
+  })
+  .mutation("refuse-invite", {
+    input: z.object({
+      from: z.string(),
+    }),
+    async resolve({ input: { from }, ctx: { session } }) {
+      // there is really nothing to do for the guy that declines the invite, but we can delete the group from here
+      // if only this user was invited to the group and no one else?
+      const sender = await prisma.user.findFirst({
+        where: { name: from },
+      });
+
+      if (!sender || !sender.foodieGroupId) return;
+
+      const count = await prisma.user.count({
+        where: { foodieGroupId: sender.foodieGroupId },
+      });
+
+      if (count === 1) {
+        await prisma.foodieGroup.delete({
+          where: { id: sender.foodieGroupId },
+        });
+      }
 
       return sender.foodieGroupId;
     },
@@ -88,7 +112,7 @@ export const foodRouter = createRouter()
     async resolve({ ctx: { session } }) {
       await prisma.user.update({
         where: { id: session?.user?.id },
-        data: { foodieGroupId: null, isFounder: null, isInviteAccepted: null },
+        data: { foodieGroupId: null },
       });
 
       const count = await prisma.user.count({

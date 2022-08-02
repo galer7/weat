@@ -16,10 +16,6 @@ export const makeAuthOptions = (
       console.log("session", { session, user });
       (session.user as User).foodieGroupId = user.foodieGroupId as string;
       (session.user as User).id = user.id;
-      (session.user as User).isInviteAccepted = user.isInviteAccepted as
-        | boolean
-        | null;
-      (session.user as User).isFounder = user.isFounder as boolean | null;
       return session;
     },
     redirect(params) {
