@@ -15,11 +15,12 @@
 - [x] add leave group button
 - [x] add `accepted_invite` boolean prop on WS and React state for other users, so we can have a pending animation
 - [x] add refuse invite button
+- [ ] persist invites
 - [ ] add session-token cookie to the WS requests, in order to validate on server
 - [ ] implement online users list on invite submit form
 - [ ] add order now button
 - [ ] add group orders list
-- [ ] add user events popup notifications (e.g. user joined your group, user left your group, user is ready to order)
+- [x] add user events popup notifications (e.g. user joined your group, user left your group)
 - [ ] make use of CSRF tokens from next-auth. first learn where they are helpful
 - [ ] design selector component
 - [ ] make sure all app routes are protected

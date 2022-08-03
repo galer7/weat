@@ -27,8 +27,10 @@ export type GroupInvitation = {
   from: string;
   foodieGroupId: string;
   to: string;
+  ack: boolean;
 };
 
 export type ToastNotification = {
   title: string;
+  id: number;
 };

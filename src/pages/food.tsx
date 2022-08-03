@@ -18,8 +18,8 @@ import { io } from "socket.io-client";
 import superjson from "superjson";
 import { signOut } from "next-auth/react";
 import { setLocalGroupState } from "@/utils/localStorage";
-import ToastNotifications from "@/components/ToastNotifications";
-import { v4 } from "uuid";
+import ToastNotifStyle from "@/styles/ToastNotification.module.css";
+import cn from "classnames";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // Get user id
@@ -78,6 +78,17 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
     isComponentVisible,
     setIsComponentVisible,
   } = useComponentVisible<HTMLDivElement>(false);
+
+  function addTemporaryToast(data: ToastNotification, expiry: number = 5000) {
+    setToastNotifications([...toastNotifications, data]);
+
+    setTimeout(() => {
+      setToastNotifications(
+        toastNotifications.filter(({ id }) => (data.id === id ? false : true))
+      );
+    }, expiry);
+  }
+
   const inviteMutation = trpc.useMutation("food.invite");
   const acceptInviteMutation = trpc.useMutation("food.accept-invite");
   const leaveGroupMutation = trpc.useMutation("food.leave-group");
@@ -113,7 +124,10 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
       if (to !== currentName) return;
 
       console.log("received invite sent for me!");
-      setGroupInvitations([...groupInvitations, { from, to, foodieGroupId }]);
+      setGroupInvitations([
+        ...groupInvitations,
+        { from, to, foodieGroupId, ack: false },
+      ]);
     });
 
     socket.on("server:state:updated", (stringifiedState, name) => {
@@ -140,14 +154,19 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
           });
         }
 
-        setToastNotifications([
-          ...toastNotifications,
-          { title: `${name} joined your group!` },
-        ]);
+        addTemporaryToast({
+          title: `${name} left your group!`,
+          id: toastNotifications.length,
+        });
       } else {
         setGroupState({
           ...groupState,
           [name]: parsedState,
+        });
+
+        addTemporaryToast({
+          title: `${name} joined your group!`,
+          id: toastNotifications.length,
         });
       }
     });
@@ -281,8 +300,6 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
           </div>
         </div>
       </div>
-
-      {/* <div>{JSON.stringify(groupState)}</div> */}
       {/* FLEX WITH YOUR FRIENDS */}
       <div className="flex gap-2 justify-evenly">
         {Object.keys(groupState).map((name, index) => {
@@ -348,70 +365,85 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
           );
         })}
       </div>
-      {/* INVITE POPUP */}
-      {groupInvitations.map(({ from, foodieGroupId, to }, index) => {
-        return (
-          <div key={index}>
-            <div>Invite received from {from}</div>
-            <button
-              onClick={() => {
-                acceptInviteMutation.mutate(
-                  { from },
-                  {
-                    onSuccess() {
-                      setLoggedInUser({
-                        ...loggedInUser,
-                        foodieGroupId,
-                      });
-
-                      socket.emit(
-                        "user:invite:accepted",
-                        to,
-                        foodieGroupId,
-                        groupState[to]
-                      );
-
-                      // delete all pending invitations after accepting one
-                      setGroupInvitations([]);
-                    },
-                  }
-                );
-              }}
+      <div className="bottom-0 right-0 fixed m-0 p-0">
+        {/* TOAST NOTIFICATIONS: should sit on top of group invitations */}
+        {toastNotifications.map(({ title }, index) => {
+          return (
+            <div
+              key={index}
+              className={cn("relative", ToastNotifStyle.toastNotification)}
             >
-              Accept
-            </button>
-            <button
-              onClick={() => {
-                refuseInviteMutation.mutate(
-                  { from },
-                  {
-                    onSuccess() {
-                      socket.emit("user:invite:refused", to, foodieGroupId);
+              <button onClick={() => {}}>X</button>
+              <div>{title}</div>
+            </div>
+          );
+        })}
+        {/* GROUP INVITATIONS: should always be stacked in bottom right corner */}
+        {groupInvitations.map(({ from, foodieGroupId, to }, index) => {
+          return (
+            <div key={index} className="relative">
+              <div>Invite received from {from}</div>
+              <button
+                onClick={() => {
+                  acceptInviteMutation.mutate(
+                    { from },
+                    {
+                      onSuccess() {
+                        setLoggedInUser({
+                          ...loggedInUser,
+                          foodieGroupId,
+                        });
 
-                      // delete just the refused invitation
-                      setGroupInvitations(
-                        groupInvitations.filter(
-                          ({ from: cFrom, foodieGroupId: cFoodieGroupId }) => {
-                            if (
-                              cFrom === from &&
-                              cFoodieGroupId === foodieGroupId
-                            )
-                              return false;
-                            return true;
-                          }
-                        )
-                      );
-                    },
-                  }
-                );
-              }}
-            >
-              Refuse
-            </button>
-          </div>
-        );
-      })}
-      <ToastNotifications toastNotifications={toastNotifications} />
+                        socket.emit(
+                          "user:invite:accepted",
+                          to,
+                          foodieGroupId,
+                          groupState[to]
+                        );
+
+                        setGroupInvitations([]);
+                      },
+                    }
+                  );
+                }}
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => {
+                  refuseInviteMutation.mutate(
+                    { from },
+                    {
+                      onSuccess() {
+                        socket.emit("user:invite:refused", to, foodieGroupId);
+
+                        // delete just the refused invitation
+                        setGroupInvitations(
+                          groupInvitations.filter(
+                            ({
+                              from: cFrom,
+                              foodieGroupId: cFoodieGroupId,
+                            }) => {
+                              if (
+                                cFrom === from &&
+                                cFoodieGroupId === foodieGroupId
+                              )
+                                return false;
+                              return true;
+                            }
+                          )
+                        );
+                      },
+                    }
+                  );
+                }}
+              >
+                Refuse
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
