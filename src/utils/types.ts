@@ -22,3 +22,13 @@ export type GroupUserState = {
   isInviteAccepted: boolean;
   restaurants: SelectedRestaurant[];
 };
+
+export type GroupInvitation = {
+  from: string;
+  foodieGroupId: string;
+  to: string;
+};
+
+export type ToastNotification = {
+  title: string;
+};

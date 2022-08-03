@@ -1,20 +1,25 @@
 import type { NextApiRequest, NextApiResponse, NextPage } from "next";
+import type { GetServerSidePropsContext } from "next";
+import type {
+  GroupUserState,
+  GroupInvitation,
+  ToastNotification,
+} from "@/utils/types";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
 import { unstable_getServerSession as getServerSession } from "next-auth/next";
 import { makeAuthOptions as makeNextAuthOptions } from "@/pages/api/auth/[...nextauth]";
 import { trpc } from "@/utils/trpc";
 import { useEffect, useState } from "react";
-import type { GetServerSidePropsContext } from "next";
 import { User } from "@prisma/client";
 import MainSelector from "@/components/MainSelector";
+import Loading from "@/components/Loading";
 import { io } from "socket.io-client";
 import superjson from "superjson";
 import { signOut } from "next-auth/react";
 import { setLocalGroupState } from "@/utils/localStorage";
-import type { GroupUserState } from "@/utils/types";
-
-type FoodProps = { user: User };
+import ToastNotifications from "@/components/ToastNotifications";
+import { v4 } from "uuid";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // Get user id
@@ -56,15 +61,27 @@ interface InviteForm extends HTMLFormElement {
 
 const socket = io(process.env.NEXT_PUBLIC_WS_URL as string);
 
-const Food: NextPage = (props: FoodProps | Record<string, never>) => {
-  // set initial empty arrays for users if in a group,
-  // else, just empty array for the logged in user
-
-  const [loggedInUser, setLoggedInUser] = useState<User>(props.user);
+const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
+  // save user from SSR in a state, because we will hold foodieGroupId until a refresh at some point
+  const [loggedInUser, setLoggedInUser] = useState<User>(user);
   const [groupState, setGroupState] = useState({
     [loggedInUser.name as string]: { isInviteAccepted: true, restaurants: [] },
   } as Record<string, GroupUserState>);
-
+  const [groupInvitations, setGroupInvitations] = useState<GroupInvitation[]>(
+    []
+  );
+  const [toastNotifications, setToastNotifications] = useState(
+    [] as ToastNotification[]
+  );
+  const {
+    ref: inviteModalRef,
+    isComponentVisible,
+    setIsComponentVisible,
+  } = useComponentVisible<HTMLDivElement>(false);
+  const inviteMutation = trpc.useMutation("food.invite");
+  const acceptInviteMutation = trpc.useMutation("food.accept-invite");
+  const leaveGroupMutation = trpc.useMutation("food.leave-group");
+  const refuseInviteMutation = trpc.useMutation("food.refuse-invite");
   const currentName = loggedInUser?.name as string;
 
   useEffect(() => {
@@ -93,12 +110,10 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
 
     socket.on("server:invite:sent", (from, to, foodieGroupId) => {
       console.log("an invite happened!");
-      if (to === currentName) {
-        console.log("received invite sent for me!");
-        setGroupInvitations([...groupInvitations, { from, to, foodieGroupId }]);
-      } else {
-        // TODO: render pending invite accept animation
-      }
+      if (to !== currentName) return;
+
+      console.log("received invite sent for me!");
+      setGroupInvitations([...groupInvitations, { from, to, foodieGroupId }]);
     });
 
     socket.on("server:state:updated", (stringifiedState, name) => {
@@ -124,6 +139,11 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
             foodieGroupId: null,
           });
         }
+
+        setToastNotifications([
+          ...toastNotifications,
+          { title: `${name} joined your group!` },
+        ]);
       } else {
         setGroupState({
           ...groupState,
@@ -133,15 +153,10 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
     });
 
     return () => {
-      socket.off("server:first:render");
-      socket.off("server:invite:sent");
-      socket.off("server:state:updated");
+      // remove all listeners for all events
+      socket.off();
     };
   });
-
-  const [groupInvitations, setGroupInvitations] = useState<
-    Array<{ from: string; foodieGroupId: string; to: string }>
-  >([]);
 
   const handleInviteSubmit = async (event: React.FormEvent<InviteForm>) => {
     event.preventDefault();
@@ -150,7 +165,6 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
       username: { value: username },
     } = event.currentTarget.elements;
 
-    console.log("captured inputs from INVITE form:", { username });
     await inviteMutation.mutate(
       { to: [username], from: currentName },
       {
@@ -183,26 +197,19 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
     );
   };
 
-  const { ref, isComponentVisible, setIsComponentVisible } =
-    useComponentVisible<HTMLDivElement>(false);
-  const inviteMutation = trpc.useMutation("food.invite");
-  const acceptInviteMutation = trpc.useMutation("food.accept-invite");
-  const leaveGroupMutation = trpc.useMutation("food.leave-group");
-  const refuseInviteMutation = trpc.useMutation("food.refuse-invite");
-
   return (
     <div>
       {/* HEADER */}
       <div className="bg-black w-full flex justify-between">
         <div className="text-white m-8 text-xl font-bold">WEAT</div>
         <div className="flex justify-end gap-1">
-          <div className="text-white m-8  text-xl font-bold">
+          <div className="text-white m-8 text-xl font-bold">
             <button onClick={() => setIsComponentVisible(!isComponentVisible)}>
               INVITE
             </button>
           </div>
           {loggedInUser.foodieGroupId && Object.keys(groupState).length >= 2 && (
-            <div className="text-white m-8  text-xl font-bold">
+            <div className="text-white m-8 text-xl font-bold">
               <button
                 onClick={() => {
                   leaveGroupMutation.mutate(
@@ -241,7 +248,7 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
               </button>
             </div>
           )}
-          <div className="text-white m-8  text-xl font-bold">
+          <div className="text-white m-8 text-xl font-bold">
             <button
               onClick={() => {
                 leaveGroupMutation.mutate(
@@ -275,7 +282,7 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
         </div>
       </div>
 
-      <div>{JSON.stringify(groupState)}</div>
+      {/* <div>{JSON.stringify(groupState)}</div> */}
       {/* FLEX WITH YOUR FRIENDS */}
       <div className="flex gap-2 justify-evenly">
         {Object.keys(groupState).map((name, index) => {
@@ -307,10 +314,13 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
                   socket={socket}
                 />
               ) : (
-                <div>Loading...</div>
+                <div>
+                  <div className="m-4">Loading...</div>
+                  <Loading className="m-4" />
+                </div>
               )}
               {/* MODAL FOR INVITE */}
-              <div ref={ref}>
+              <div ref={inviteModalRef}>
                 {isComponentVisible && (
                   <Modal>
                     <div>Invite a friend</div>
@@ -401,6 +411,7 @@ const Food: NextPage = (props: FoodProps | Record<string, never>) => {
           </div>
         );
       })}
+      <ToastNotifications toastNotifications={toastNotifications} />
     </div>
   );
 };

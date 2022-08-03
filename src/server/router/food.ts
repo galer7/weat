@@ -85,7 +85,7 @@ export const foodRouter = createRouter()
     input: z.object({
       from: z.string(),
     }),
-    async resolve({ input: { from }, ctx: { session } }) {
+    async resolve({ input: { from } }) {
       // there is really nothing to do for the guy that declines the invite, but we can delete the group from here
       // if only this user was invited to the group and no one else?
       const sender = await prisma.user.findFirst({

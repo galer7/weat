@@ -1,8 +1,6 @@
-import NextAuth, { type NextAuthOptions } from "next-auth";
 import type { NextApiRequest, NextApiResponse } from "next";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-
-// Prisma adapter for NextAuth, optional and can be removed
 import { prisma } from "@/server/db/client";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { User } from "@prisma/client";
@@ -29,6 +27,9 @@ export const makeAuthOptions = (
     }),
   ],
   adapter: PrismaAdapter(prisma),
+  session: {
+    maxAge: 3600, // 1h
+  },
   debug: true,
 });
 

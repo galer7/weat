@@ -48,14 +48,17 @@ The initial dump should aggregate all changes so far from all other participants
 
 ## (First) Invite / create group
 - if the user has a null `foodieGroupId`, it means that it has no group
-- when inviting (and not accepted yet), a group should be created => `foodieGroupId`. The other users from the group will render a pending animation for the new user
+- when inviting (and not accepted yet), a group should be created => `foodieGroupId`. The other users from the group will render a pending animation for the new user that did not accept the invitation yet
 - the invited user will receive an invite popup on his page
 - when the invited user accepts the invite, a new selection menu will be rendered for the user
-- TODO: the list will be updating on user type, and it will display only online users whose names pass the matcher's rules
 
 ## Resume on page refresh
 - if the user is not in a group, then tab refresh will delete his selection
 - if the user is part of a group, the state is persisted by the WS server in the DB. So, on page refresh, the user will emit a `user:initial:event`; when the server gets that, the server will emit `server:initial:event`, which will respond with the entire group state
+
+## Leave group / logout
+- when pressing leave group button or logging out, couple of things happen:
+  - if after removing `foodieGroupId` from the user that left, there is only one more user left, the group should be deleted
 
 ## Food selection
 - a user can select multiple food items from multiple restaurants
