@@ -270,24 +270,27 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
           <div className="text-white m-8 text-xl font-bold">
             <button
               onClick={() => {
+                if (!loggedInUser.foodieGroupId) {
+                  signOut();
+                  return;
+                }
+
                 leaveGroupMutation.mutate(
                   {},
                   {
                     onSuccess() {
                       // users that do not belong to any group can logout DUUH
-                      if (loggedInUser.foodieGroupId) {
-                        socket.emit(
-                          "user:state:updated",
-                          loggedInUser.name,
-                          loggedInUser.foodieGroupId
-                          // pass undefined as the 3rd argument, so that we can delete this user's state
-                        );
+                      socket.emit(
+                        "user:state:updated",
+                        loggedInUser.name,
+                        loggedInUser.foodieGroupId
+                        // pass undefined as the 3rd argument, so that we can delete this user's state
+                      );
 
-                        setLoggedInUser({
-                          ...loggedInUser,
-                          foodieGroupId: null,
-                        });
-                      }
+                      setLoggedInUser({
+                        ...loggedInUser,
+                        foodieGroupId: null,
+                      });
 
                       signOut();
                     },

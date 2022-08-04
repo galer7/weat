@@ -4,7 +4,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   NODE_ENV: z.enum(["development", "test", "production"]),
   NEXTAUTH_SECRET: z.string(),
-  NEXTAUTH_URL: z.string().url().optional(),
+  NEXTAUTH_URL: z.union([z.string().url(), z.undefined()]),
   NEXT_PUBLIC_WS_URL: z.string().url(),
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),

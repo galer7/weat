@@ -4,7 +4,7 @@ import { authRouter } from "./auth";
 import { foodRouter } from "./food";
 import { usersRouter } from "./users";
 import { TRPCError } from "@trpc/server";
-import superjson from 'superjson'
+import superjson from "superjson";
 
 export const appRouter = createRouter()
   .transformer(superjson)
@@ -18,7 +18,7 @@ export const appRouter = createRouter()
     return next();
   })
   .merge("food.", foodRouter)
-  .merge("users.", usersRouter)
+  .merge("users.", usersRouter);
 
 // export type definition of API
 export type AppRouter = typeof appRouter;

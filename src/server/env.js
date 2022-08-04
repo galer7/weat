@@ -8,7 +8,7 @@ const env = envSchema.safeParse(process.env);
 
 const formatErrors = (
   /** @type {import('zod').ZodFormattedError<Map<string,string>,string>} */
-  errors,
+  errors
 ) =>
   Object.entries(errors)
     .map(([name, value]) => {
@@ -20,7 +20,7 @@ const formatErrors = (
 if (!env.success) {
   console.error(
     "❌ Invalid environment variables:\n",
-    ...formatErrors(env.error.format()),
+    ...formatErrors(env.error.format())
   );
   process.exit(1);
 }
