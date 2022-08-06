@@ -59,7 +59,9 @@ interface InviteForm extends HTMLFormElement {
   readonly elements: InviteFormFields;
 }
 
-const socket = io(process.env.NEXT_PUBLIC_WS_URL as string);
+const socket = io(process.env.NEXT_PUBLIC_WS_URL as string, {
+  transports: ["websocket"],
+});
 
 const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
   // save user from SSR in a state, because we will hold foodieGroupId until a refresh at some point
@@ -194,7 +196,6 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
             foodieGroupId: newFoodieGroupId as string,
           });
 
-          await fetch(`${process.env.NEXTAUTH_URL}/session?update`);
           console.log({ newFoodieGroupId });
 
           socket.emit(

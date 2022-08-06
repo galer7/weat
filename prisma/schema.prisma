@@ -63,5 +63,5 @@ model VerificationToken {
 model FoodieGroup {
     id               String  @id @default(cuid())
     users            User[]
-    foodieGroupState String? // JSON not supported in SQLite (dev env)
+    foodieGroupState String? @db.Text
 }

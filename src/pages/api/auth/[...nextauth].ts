@@ -12,7 +12,9 @@ export const makeAuthOptions = (
   callbacks: {
     session({ session, user }) {
       console.log("session", { session, user });
-      (session.user as User).foodieGroupId = user.foodieGroupId as string;
+      (session.user as User).foodieGroupId = user.foodieGroupId as
+        | string
+        | null;
       (session.user as User).id = user.id;
       return session;
     },

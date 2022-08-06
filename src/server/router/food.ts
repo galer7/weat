@@ -53,8 +53,6 @@ export const foodRouter = createRouter()
                 },
               });
 
-              await fetch(`${process.env.NEXTAUTH_URL}/session?update`);
-
               return newFoodieGroup.id;
             }
           } catch (error) {
