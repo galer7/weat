@@ -60,7 +60,7 @@ interface InviteForm extends HTMLFormElement {
 }
 
 const socket = io(process.env.NEXT_PUBLIC_WS_URL as string, {
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
 });
 
 const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
