@@ -4,6 +4,8 @@ import type {
   GroupUserState,
   GroupInvitation,
   ToastNotification,
+  ServerToClientEvents,
+  ClientToServerEvents,
 } from "@/utils/types";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
@@ -14,7 +16,7 @@ import { useEffect, useState } from "react";
 import { User } from "@prisma/client";
 import MainSelector from "@/components/MainSelector";
 import Loading from "@/components/Loading";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import superjson from "superjson";
 import { signOut } from "next-auth/react";
 import { setLocalGroupState } from "@/utils/localStorage";
@@ -59,9 +61,12 @@ interface InviteForm extends HTMLFormElement {
   readonly elements: InviteFormFields;
 }
 
-const socket = io(process.env.NEXT_PUBLIC_WS_URL as string, {
-  transports: ["websocket", "polling"],
-});
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
+  process.env.NEXT_PUBLIC_WS_URL as string,
+  {
+    transports: ["websocket", "polling"],
+  }
+);
 
 const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
   // save user from SSR in a state, because we will hold foodieGroupId until a refresh at some point
@@ -163,7 +168,7 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
       } else {
         setGroupState({
           ...groupState,
-          [name]: parsedState,
+          [name]: parsedState as GroupUserState,
         });
 
         addTemporaryToast({
@@ -203,8 +208,8 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
             currentName,
             username,
             // either foodie group was just created, either it existed from SSR
-            newFoodieGroupId || loggedInUser?.foodieGroupId, // loggedInUser?.foodieGroupId is still from closure
-            groupState[currentName]
+            newFoodieGroupId || (loggedInUser?.foodieGroupId as string), // loggedInUser?.foodieGroupId is still from closure
+            groupState[currentName] as GroupUserState
           );
 
           // add to groupState as empty object
@@ -239,7 +244,7 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
                         socket.emit(
                           "user:state:updated",
                           loggedInUser.name,
-                          loggedInUser.foodieGroupId
+                          loggedInUser.foodieGroupId as string
                           // pass undefined as the 3rd argument, so that we can delete this user's state
                         );
 
@@ -284,8 +289,7 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
                       socket.emit(
                         "user:state:updated",
                         loggedInUser.name,
-                        loggedInUser.foodieGroupId
-                        // pass undefined as the 3rd argument, so that we can delete this user's state
+                        loggedInUser.foodieGroupId as string
                       );
 
                       setLoggedInUser({
@@ -399,10 +403,10 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
                         });
 
                         socket.emit(
-                          "user:invite:accepted",
+                          "user:invite:response",
                           to,
                           foodieGroupId,
-                          groupState[to]
+                          groupState[to] as GroupUserState
                         );
 
                         setGroupInvitations([]);
@@ -419,7 +423,7 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
                     { from },
                     {
                       onSuccess() {
-                        socket.emit("user:invite:refused", to, foodieGroupId);
+                        socket.emit("user:invite:response", to, foodieGroupId);
 
                         // delete just the refused invitation
                         setGroupInvitations(
