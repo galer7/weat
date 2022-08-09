@@ -9,18 +9,21 @@
 - [x] find how to attach foodieGroupId on the session object when creating the new foodieGroup...
 - [x] ws: persist foodieGroup in db
 - [x] add google provider
-- [x] implement signout logics: remove user from foodieGroup + ws update state after. if the group has only one user left, delete the group completely
+- [x] implement sign-out logics: remove user from foodieGroup + ws update state after. if the group has only one user left, delete the group completely
 - [ ] bug: first add restaurant press after user joins the group is not registered (sometimes?)
 - [x] save user state to local storage
 - [x] add leave group button
 - [x] add `accepted_invite` boolean prop on WS and React state for other users, so we can have a pending animation
 - [x] add refuse invite button
-- [ ] persist invites
-- [ ] add session-token cookie to the WS requests, in order to validate on server
+- [x] persist invites
+- [ ] send invite after user with pending invite reloaded the page
+- [ ] bug: session dies unexpectedly
+- [ ] bug: cannot login after sign-out on non-private browser instance
 - [ ] implement online users list on invite submit form
 - [ ] add order now button
 - [ ] add group orders list
 - [x] add user events popup notifications (e.g. user joined your group, user left your group)
+  - [ ] TODO: fix joined notification (appears on every update, not good)
 - [ ] make use of CSRF tokens from next-auth. first learn where they are helpful
 - [ ] design selector component
 - [ ] make sure all app routes are protected
