@@ -4,8 +4,8 @@ import type {
   GroupUserState,
   GroupInvitation,
   ToastNotification,
-  ServerToClientEvents,
-  ClientToServerEvents,
+  InviteForm,
+  GroupState,
 } from "@/utils/types";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import Modal from "@/components/Modal";
@@ -16,12 +16,13 @@ import { useEffect, useState } from "react";
 import { User } from "@prisma/client";
 import MainSelector from "@/components/MainSelector";
 import Loading from "@/components/Loading";
-import { io, Socket } from "socket.io-client";
 import superjson from "superjson";
 import { signOut } from "next-auth/react";
 import { setLocalGroupState } from "@/utils/localStorage";
 import ToastNotifStyle from "@/styles/ToastNotification.module.css";
 import cn from "classnames";
+import { GroupStateProvider } from "@/state/GroupStateContext";
+import { SocketProvider, useSocket } from "@/state/SocketContext";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // Get user id
@@ -53,33 +54,9 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   };
 }
 
-interface InviteFormFields extends HTMLFormControlsCollection {
-  username: HTMLInputElement;
-}
-
-interface InviteForm extends HTMLFormElement {
-  readonly elements: InviteFormFields;
-}
-
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-  process.env.NEXT_PUBLIC_WS_URL as string,
-  {
-    transports: ["websocket", "polling"],
-  }
-);
-
 const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
   // save user from SSR in a state, because we will hold foodieGroupId until a refresh at some point
   const [loggedInUser, setLoggedInUser] = useState<User>(user);
-  const [groupState, setGroupState] = useState({
-    [loggedInUser.name as string]: { isInviteAccepted: true, restaurants: [] },
-  } as Record<string, GroupUserState>);
-  const [groupInvitations, setGroupInvitations] = useState<GroupInvitation[]>(
-    []
-  );
-  const [toastNotifications, setToastNotifications] = useState(
-    [] as ToastNotification[]
-  );
   const {
     ref: inviteModalRef,
     isComponentVisible,
@@ -101,6 +78,8 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
   const leaveGroupMutation = trpc.useMutation("food.leave-group");
   const refuseInviteMutation = trpc.useMutation("food.refuse-invite");
   const currentName = loggedInUser?.name as string;
+
+  const socket = useSocket();
 
   useEffect(() => {
     socket.on("server:first:render", (stringifiedState) => {
@@ -223,29 +202,83 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
   };
 
   return (
-    <div>
-      {/* HEADER */}
-      <div className="bg-black w-full flex justify-between">
-        <div className="text-white m-8 text-xl font-bold">WEAT</div>
-        <div className="flex justify-end gap-1">
-          <div className="text-white m-8 text-xl font-bold">
-            <button onClick={() => setIsComponentVisible(!isComponentVisible)}>
-              INVITE
-            </button>
-          </div>
-          {loggedInUser.foodieGroupId && Object.keys(groupState).length >= 2 && (
+    <GroupStateProvider
+      initialState={{
+        [loggedInUser.name as string]: {
+          isInviteAccepted: true,
+          restaurants: [],
+        },
+      }}
+    >
+      <SocketProvider>
+        {/* HEADER */}
+        <div className="bg-black w-full flex justify-between">
+          <div className="text-white m-8 text-xl font-bold">WEAT</div>
+          <div className="flex justify-end gap-1">
+            <div className="text-white m-8 text-xl font-bold">
+              <button
+                onClick={() => setIsComponentVisible(!isComponentVisible)}
+              >
+                INVITE
+              </button>
+            </div>
+            {loggedInUser.foodieGroupId && Object.keys(groupState).length >= 2 && (
+              <div className="text-white m-8 text-xl font-bold">
+                <button
+                  onClick={() => {
+                    leaveGroupMutation.mutate(
+                      {},
+                      {
+                        onSuccess() {
+                          socket.emit(
+                            "user:state:updated",
+                            loggedInUser.name,
+                            loggedInUser.foodieGroupId as string
+                            // pass undefined as the 3rd argument, so that we can delete this user's state
+                          );
+
+                          setLoggedInUser({
+                            ...loggedInUser,
+                            foodieGroupId: null,
+                          });
+
+                          setGroupState({
+                            [loggedInUser.name]: groupState[
+                              loggedInUser.name
+                            ] as GroupUserState,
+                          });
+
+                          setLocalGroupState({
+                            [loggedInUser.name]: groupState[
+                              loggedInUser.name
+                            ] as GroupUserState,
+                          });
+                        },
+                      }
+                    );
+                  }}
+                >
+                  LEAVE GROUP
+                </button>
+              </div>
+            )}
             <div className="text-white m-8 text-xl font-bold">
               <button
                 onClick={() => {
+                  if (!loggedInUser.foodieGroupId) {
+                    signOut();
+                    return;
+                  }
+
                   leaveGroupMutation.mutate(
                     {},
                     {
                       onSuccess() {
+                        // users that do not belong to any group can logout DUUH
                         socket.emit(
                           "user:state:updated",
                           loggedInUser.name,
                           loggedInUser.foodieGroupId as string
-                          // pass undefined as the 3rd argument, so that we can delete this user's state
                         );
 
                         setLoggedInUser({
@@ -253,206 +286,176 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
                           foodieGroupId: null,
                         });
 
-                        setGroupState({
-                          [loggedInUser.name]: groupState[
-                            loggedInUser.name
-                          ] as GroupUserState,
-                        });
-
-                        setLocalGroupState({
-                          [loggedInUser.name]: groupState[
-                            loggedInUser.name
-                          ] as GroupUserState,
-                        });
+                        signOut();
                       },
                     }
                   );
                 }}
               >
-                LEAVE GROUP
+                LOGOUT
               </button>
             </div>
-          )}
-          <div className="text-white m-8 text-xl font-bold">
-            <button
-              onClick={() => {
-                if (!loggedInUser.foodieGroupId) {
-                  signOut();
-                  return;
-                }
-
-                leaveGroupMutation.mutate(
-                  {},
-                  {
-                    onSuccess() {
-                      // users that do not belong to any group can logout DUUH
-                      socket.emit(
-                        "user:state:updated",
-                        loggedInUser.name,
-                        loggedInUser.foodieGroupId as string
-                      );
-
-                      setLoggedInUser({
-                        ...loggedInUser,
-                        foodieGroupId: null,
-                      });
-
-                      signOut();
-                    },
-                  }
-                );
-              }}
-            >
-              LOGOUT
-            </button>
           </div>
         </div>
-      </div>
-      {/* FLEX WITH YOUR FRIENDS */}
-      <div className="flex gap-2 justify-evenly">
-        {Object.keys(groupState).map((name, index) => {
-          const isCurrentUser = name === currentName;
-          return (
-            <div
-              className={`m-8 ${isCurrentUser && "border-red-600 border-2"}`}
-              key={index}
-            >
-              <div className="m-4">{name}</div>
-              {groupState[name]?.isInviteAccepted ? (
-                <MainSelector
-                  restaurants={[
-                    {
-                      name: "1",
-                      items: [
-                        { name: "sushi", price: 12.12 },
-                        { name: "sushi2", price: 122.122 },
-                      ],
-                    },
-                    { name: "2", items: [{ name: "burger", price: 23.23 }] },
-                    { name: "3", items: [{ name: "sandwich", price: 34.34 }] },
-                    { name: "4", items: [{ name: "coffee", price: 45.45 }] },
-                  ]}
-                  name={name}
-                  loggedInUser={loggedInUser}
-                  groupState={groupState}
-                  setGroupState={setGroupState}
-                  socket={socket}
-                />
-              ) : (
-                <div>
-                  <div className="m-4">Loading...</div>
-                  <Loading className="m-4" />
-                </div>
-              )}
-              {/* MODAL FOR INVITE */}
-              <div ref={inviteModalRef}>
-                {isComponentVisible && (
-                  <Modal>
-                    <div>Invite a friend</div>
-                    <form
-                      action=""
-                      className="w-1/2"
-                      onSubmit={handleInviteSubmit}
-                    >
-                      <fieldset disabled={inviteMutation.isLoading}>
-                        <label className="flex gap-2 justify-around">
-                          Username
-                          <input
-                            type="text"
-                            id="username"
-                            className="border-black border-2"
-                          />
-                        </label>
-                        <input type="submit" value="submit" />
-                      </fieldset>
-                    </form>
-                  </Modal>
+        {/* FLEX WITH YOUR FRIENDS */}
+        <div className="flex gap-2 justify-evenly">
+          {Object.keys(groupState).map((name, index) => {
+            const isCurrentUser = name === currentName;
+            return (
+              <div
+                className={`m-8 ${isCurrentUser && "border-red-600 border-2"}`}
+                key={index}
+              >
+                <div className="m-4">{name}</div>
+                {groupState[name]?.isInviteAccepted ? (
+                  <MainSelector
+                    restaurants={[
+                      {
+                        name: "1",
+                        items: [
+                          { name: "sushi", price: 12.12 },
+                          { name: "sushi2", price: 122.122 },
+                        ],
+                      },
+                      {
+                        name: "2",
+                        items: [{ name: "burger", price: 23.23 }],
+                      },
+                      {
+                        name: "3",
+                        items: [{ name: "sandwich", price: 34.34 }],
+                      },
+                      {
+                        name: "4",
+                        items: [{ name: "coffee", price: 45.45 }],
+                      },
+                    ]}
+                    name={name}
+                    loggedInUser={loggedInUser}
+                    groupState={groupState}
+                    setGroupState={setGroupState}
+                    socket={socket}
+                  />
+                ) : (
+                  <div>
+                    <div className="m-4">Loading...</div>
+                    <Loading className="m-4" />
+                  </div>
                 )}
+                {/* MODAL FOR INVITE */}
+                <div ref={inviteModalRef}>
+                  {isComponentVisible && (
+                    <Modal>
+                      <div>Invite a friend</div>
+                      <form
+                        action=""
+                        className="w-1/2"
+                        onSubmit={handleInviteSubmit}
+                      >
+                        <fieldset disabled={inviteMutation.isLoading}>
+                          <label className="flex gap-2 justify-around">
+                            Username
+                            <input
+                              type="text"
+                              id="username"
+                              className="border-black border-2"
+                            />
+                          </label>
+                          <input type="submit" value="submit" />
+                        </fieldset>
+                      </form>
+                    </Modal>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="bottom-0 right-0 fixed m-0 p-0">
-        {/* TOAST NOTIFICATIONS: should sit on top of group invitations */}
-        {toastNotifications.map(({ title }, index) => {
-          return (
-            <div
-              key={index}
-              className={cn("relative", ToastNotifStyle.toastNotification)}
-            >
-              <button onClick={() => {}}>X</button>
-              <div>{title}</div>
-            </div>
-          );
-        })}
-        {/* GROUP INVITATIONS: should always be stacked in bottom right corner */}
-        {groupInvitations.map(({ from, foodieGroupId, to }, index) => {
-          return (
-            <div key={index} className="relative">
-              <div>Invite received from {from}</div>
-              <button
-                onClick={() => {
-                  acceptInviteMutation.mutate(
-                    { from },
-                    {
-                      onSuccess() {
-                        setLoggedInUser({
-                          ...loggedInUser,
-                          foodieGroupId,
-                        });
-
-                        socket.emit(
-                          "user:invite:response",
-                          to,
-                          foodieGroupId,
-                          groupState[to] as GroupUserState
-                        );
-
-                        setGroupInvitations([]);
-                      },
-                    }
-                  );
-                }}
+            );
+          })}
+        </div>
+        <div className="bottom-0 right-0 fixed m-0 p-0">
+          {/* TOAST NOTIFICATIONS: should sit on top of group invitations */}
+          {toastNotifications.map(({ title }, index) => {
+            return (
+              <div
+                key={index}
+                className={cn("relative", ToastNotifStyle.toastNotification)}
               >
-                Accept
-              </button>
-              <button
-                onClick={() => {
-                  refuseInviteMutation.mutate(
-                    { from },
-                    {
-                      onSuccess() {
-                        socket.emit("user:invite:response", to, foodieGroupId);
+                <button onClick={() => {}}>X</button>
+                <div>{title}</div>
+              </div>
+            );
+          })}
+          {/* GROUP INVITATIONS: should always be stacked in bottom right corner */}
+          {groupInvitations.map(({ from, foodieGroupId, to }, index) => {
+            return (
+              <div key={index} className="relative">
+                <div>Invite received from {from}</div>
+                <button
+                  onClick={() => {
+                    acceptInviteMutation.mutate(
+                      { from },
+                      {
+                        onSuccess() {
+                          setLoggedInUser({
+                            ...loggedInUser,
+                            foodieGroupId,
+                          });
 
-                        // delete just the refused invitation
-                        setGroupInvitations(
-                          groupInvitations.filter(
-                            ({
-                              from: cFrom,
-                              foodieGroupId: cFoodieGroupId,
-                            }) => {
-                              if (
-                                cFrom === from &&
-                                cFoodieGroupId === foodieGroupId
-                              )
-                                return false;
-                              return true;
-                            }
-                          )
-                        );
-                      },
-                    }
-                  );
-                }}
-              >
-                Refuse
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+                          socket.emit(
+                            "user:invite:response",
+                            to,
+                            foodieGroupId,
+                            groupState[to] as GroupUserState
+                          );
+
+                          setGroupInvitations([]);
+                        },
+                      }
+                    );
+                  }}
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => {
+                    refuseInviteMutation.mutate(
+                      { from },
+                      {
+                        onSuccess() {
+                          socket.emit(
+                            "user:invite:response",
+                            to,
+                            foodieGroupId
+                          );
+
+                          // delete just the refused invitation
+                          setGroupInvitations(
+                            groupInvitations.filter(
+                              ({
+                                from: cFrom,
+                                foodieGroupId: cFoodieGroupId,
+                              }) => {
+                                if (
+                                  cFrom === from &&
+                                  cFoodieGroupId === foodieGroupId
+                                )
+                                  return false;
+                                return true;
+                              }
+                            )
+                          );
+                        },
+                      }
+                    );
+                  }}
+                >
+                  Refuse
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </SocketProvider>
+    </GroupStateProvider>
   );
 };
 

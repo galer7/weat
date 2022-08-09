@@ -8,6 +8,7 @@ import type {
   SelectedRestaurant,
   SelectedFoodItem,
   FoodItem,
+  GroupState,
 } from "@/utils/types";
 
 const MainSelector = ({
@@ -21,8 +22,8 @@ const MainSelector = ({
   restaurants: Restaurant[];
   name: string;
   loggedInUser: User;
-  groupState: Record<string, GroupUserState>;
-  setGroupState: (newGroupState: Record<string, GroupUserState>) => void;
+  groupState: GroupState;
+  setGroupState: (newGroupState: GroupState) => void;
   socket: Socket;
 }) => {
   // TODO: use a Proxy on the restaurants array so that we can

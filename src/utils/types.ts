@@ -23,6 +23,8 @@ export type GroupUserState = {
   restaurants: SelectedRestaurant[];
 };
 
+export type GroupState = Record<string, GroupUserState>;
+
 export type GroupInvitation = {
   from: string;
   foodieGroupId: string;
@@ -64,3 +66,11 @@ export type ClientToServerEvents = {
     userState?: GroupUserState
   ) => void;
 };
+
+interface InviteFormFields extends HTMLFormControlsCollection {
+  username: HTMLInputElement;
+}
+
+export interface InviteForm extends HTMLFormElement {
+  readonly elements: InviteFormFields;
+}
