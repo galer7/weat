@@ -32,11 +32,6 @@ export type GroupInvitation = {
   ack: boolean;
 };
 
-export type ToastNotification = {
-  title: string;
-  id: number;
-};
-
 export type ServerToClientEvents = {
   "server:first:render": (stringifiedState: string) => void;
   "server:invite:sent": (
@@ -66,11 +61,3 @@ export type ClientToServerEvents = {
     userState?: GroupUserState
   ) => void;
 };
-
-interface InviteFormFields extends HTMLFormControlsCollection {
-  username: HTMLInputElement;
-}
-
-export interface InviteForm extends HTMLFormElement {
-  readonly elements: InviteFormFields;
-}

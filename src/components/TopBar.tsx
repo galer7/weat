@@ -1,18 +1,23 @@
-import {
-  useGroupState,
-  useGroupStateDispatch,
-} from "@/state/GroupStateContext";
-import useComponentVisible from "@/hooks/useComponentVisible";
+import { useGroupState } from "@/state/GroupStateContext";
+import { useLoggedInUser } from "@/state/LoggedUserContext";
+import { useSocket } from "@/state/SocketContext";
+import { setLocalGroupState } from "@/utils/localStorage";
+import { trpc } from "@/utils/trpc";
+import { GroupUserState } from "@/utils/types";
+import { signOut } from "next-auth/react";
+import { Dispatch, SetStateAction } from "react";
 
-export default function TopBar() {
-  const {
-    ref: inviteModalRef,
-    isComponentVisible,
-    setIsComponentVisible,
-  } = useComponentVisible<HTMLDivElement>(false);
-
-  const groupState = useGroupState();
-  const groupStateDispatch = useGroupStateDispatch();
+export default function TopBar({
+  isComponentVisible,
+  setIsComponentVisible,
+}: {
+  isComponentVisible: boolean;
+  setIsComponentVisible: Dispatch<SetStateAction<boolean>>;
+}) {
+  const leaveGroupMutation = trpc.useMutation("food.leave-group");
+  const { groupState, dispatch: groupStateDispatch } = useGroupState();
+  const socket = useSocket();
+  const { loggedInUser, dispatch } = useLoggedInUser();
 
   return (
     <div className="bg-black w-full flex justify-between">
@@ -23,53 +28,58 @@ export default function TopBar() {
             INVITE
           </button>
         </div>
-        {loggedInUser.foodieGroupId && Object.keys(groupState).length >= 2 && (
-          <div className="text-white m-8 text-xl font-bold">
-            <button
-              onClick={() => {
-                leaveGroupMutation.mutate(
-                  {},
-                  {
-                    onSuccess() {
-                      socket.emit(
-                        "user:state:updated",
-                        loggedInUser.name,
-                        loggedInUser.foodieGroupId as string
-                        // pass undefined as the 3rd argument, so that we can delete this user's state
-                      );
+        <>
+          {loggedInUser?.foodieGroupId && Object.keys(groupState).length >= 2 && (
+            <div className="text-white m-8 text-xl font-bold">
+              <button
+                onClick={() => {
+                  leaveGroupMutation.mutate(
+                    {},
+                    {
+                      onSuccess() {
+                        socket.emit(
+                          "user:state:updated",
+                          loggedInUser?.name as string,
+                          loggedInUser?.foodieGroupId as string
+                          // pass undefined as the 3rd argument, so that we can delete this user's state
+                        );
 
-                      setLoggedInUser({
-                        ...loggedInUser,
-                        foodieGroupId: null,
-                      });
+                        dispatch({
+                          type: "overwrite",
+                          payload: {
+                            ...loggedInUser,
+                            foodieGroupId: null,
+                          },
+                        });
 
-                      groupStateDispatch({
-                        type: "overwrite",
-                        overwriteState: {
-                          [loggedInUser.name]: groupState[
-                            loggedInUser.name
-                          ] as GroupUserState,
-                        },
-                      });
+                        groupStateDispatch({
+                          type: "overwrite",
+                          overwriteState: {
+                            [loggedInUser?.name as string]: groupState[
+                              loggedInUser?.name as string
+                            ] as GroupUserState,
+                          },
+                        });
 
-                      setLocalGroupState({
-                        [loggedInUser.name]: groupState[
-                          loggedInUser.name
-                        ] as GroupUserState,
-                      });
-                    },
-                  }
-                );
-              }}
-            >
-              LEAVE GROUP
-            </button>
-          </div>
-        )}
+                        setLocalGroupState(
+                          groupState[
+                            loggedInUser?.name as string
+                          ] as GroupUserState
+                        );
+                      },
+                    }
+                  );
+                }}
+              >
+                LEAVE GROUP
+              </button>
+            </div>
+          )}
+        </>
         <div className="text-white m-8 text-xl font-bold">
           <button
             onClick={() => {
-              if (!loggedInUser.foodieGroupId) {
+              if (!loggedInUser?.foodieGroupId) {
                 signOut();
                 return;
               }
@@ -81,13 +91,16 @@ export default function TopBar() {
                     // users that do not belong to any group can logout DUUH
                     socket.emit(
                       "user:state:updated",
-                      loggedInUser.name,
+                      loggedInUser.name as string,
                       loggedInUser.foodieGroupId as string
                     );
 
-                    setLoggedInUser({
-                      ...loggedInUser,
-                      foodieGroupId: null,
+                    dispatch({
+                      type: "overwrite",
+                      payload: {
+                        ...loggedInUser,
+                        foodieGroupId: null,
+                      },
                     });
 
                     signOut();

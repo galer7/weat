@@ -14,10 +14,10 @@ import {
 } from "react";
 
 const GroupStateContext = createContext<{
-  state: GroupState;
+  groupState: GroupState;
   dispatch: Dispatch<GroupStateReducerAction>;
 }>({
-  state: {},
+  groupState: {},
   dispatch: () => {},
 });
 
@@ -31,10 +31,8 @@ export function GroupStateProvider({
   const [groupState, dispatch] = useReducer(groupStateReducer, initialState);
 
   return (
-    <GroupStateContext.Provider value={groupState}>
-      <GroupStateDispatchContext.Provider value={dispatch}>
-        {children}
-      </GroupStateDispatchContext.Provider>
+    <GroupStateContext.Provider value={{ groupState, dispatch }}>
+      {children}
     </GroupStateContext.Provider>
   );
 }
@@ -52,34 +50,58 @@ const restaurants = [
   { name: "4", items: [{ name: "coffee", price: 45.45 }] },
 ];
 
-type GroupStateReducerAction = {
-  name: string;
-  type:
-    | "restaurant:add"
-    | "restaurant:remove"
-    | "restaurant:change"
-    | "food:add"
-    | "food:remove"
-    | "food:change"
-    | "overwrite";
-  restaurantIndex: number;
-  foodItemIndex: number;
-  delta: 1 | -1;
-  overwriteState: GroupUserState;
-};
+type GroupStateReducerAction =
+  | ({
+      name: string;
+    } & (
+      | {
+          type: "restaurant:add";
+        }
+      | {
+          type: "restaurant:remove";
+          restaurantIndex: number;
+        }
+      | {
+          type: "restaurant:change";
+          restaurantIndex: number;
+          delta: 1 | -1;
+        }
+      | {
+          type: "food:add";
+          restaurantIndex: number;
+        }
+      | {
+          type: "food:remove";
+          restaurantIndex: number;
+          foodItemIndex: number;
+        }
+      | {
+          type: "food:change";
+          restaurantIndex: number;
+          foodItemIndex: number;
+          delta: 1 | -1;
+        }
+    ))
+  | {
+      type: "overwrite";
+      overwriteState: GroupState;
+    };
 
 const groupStateReducer = (
   groupState: GroupState,
   action: GroupStateReducerAction
 ) => {
-  const { name, type, restaurantIndex, foodItemIndex, delta, overwriteState } =
-    action;
+  if (action.type === "overwrite") {
+    return action.overwriteState;
+  }
+
+  const { name, type } = action;
   const currentUserState = groupState[name]
     ?.restaurants as SelectedRestaurant[];
 
   switch (type) {
     case "restaurant:add": {
-      if (currentUserState.length === restaurants.length) return;
+      if (currentUserState.length === restaurants.length) return groupState;
 
       return {
         ...groupState,
@@ -103,8 +125,10 @@ const groupStateReducer = (
       };
     }
     case "restaurant:remove": {
+      const { restaurantIndex } = action;
       if (restaurantIndex < 0 || restaurantIndex > currentUserState.length - 1)
-        return;
+        return groupState;
+
       return {
         ...groupState,
         [name]: {
@@ -116,6 +140,8 @@ const groupStateReducer = (
       };
     }
     case "restaurant:change": {
+      const { restaurantIndex, delta } = action;
+
       let rawNewIndex =
         (currentUserState[restaurantIndex]?.originalIndex as number) + delta;
       if (rawNewIndex < 0) rawNewIndex = restaurants.length - 1;
@@ -142,6 +168,8 @@ const groupStateReducer = (
       };
     }
     case "food:add": {
+      const { restaurantIndex } = action;
+
       const originalRestaurantIndex = (
         currentUserState[restaurantIndex] as SelectedRestaurant
       ).originalIndex;
@@ -167,6 +195,8 @@ const groupStateReducer = (
       };
     }
     case "food:remove": {
+      const { restaurantIndex, foodItemIndex } = action;
+
       return {
         ...groupState,
         [name]: {
@@ -182,6 +212,8 @@ const groupStateReducer = (
       };
     }
     case "food:change": {
+      const { restaurantIndex, foodItemIndex, delta } = action;
+
       let rawNewFoodItemIndex =
         ((currentUserState[restaurantIndex] as SelectedRestaurant).items[
           foodItemIndex
@@ -221,16 +253,12 @@ const groupStateReducer = (
       };
     }
 
-    case "overwrite": {
-      return overwriteState;
-    }
+    default:
+      console.error(`Action object ${action} unknown`);
+      return groupState;
   }
 };
 
 export function useGroupState() {
   return useContext(GroupStateContext);
-}
-
-export function useGroupStateDispatch() {
-  return useContext(GroupStateDispatchContext);
 }

@@ -4,12 +4,15 @@ import { withTRPC } from "@trpc/next";
 import type { AppRouter } from "@/server/router";
 import { SessionProvider } from "next-auth/react";
 import superjson from "superjson";
+import { SocketProvider } from "@/state/SocketContext";
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
-    <SessionProvider session={session} refetchInterval={5 * 60}>
-      <Component {...pageProps} />
-    </SessionProvider>
+    <SocketProvider>
+      <SessionProvider session={session}>
+        <Component {...pageProps} />
+      </SessionProvider>
+    </SocketProvider>
   );
 }
 
