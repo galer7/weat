@@ -27,7 +27,7 @@ export const foodRouter = createRouter()
               include: { foodieGroup: { include: { users: true } } },
             });
 
-            // If the foodie group doesn't exist, create it
+            // If the foodie group doesn't exist, create it OR
             // If in a group alone, allow to create a new group and delete old one
             if (
               !currentUser?.foodieGroupId ||
@@ -42,6 +42,7 @@ export const foodRouter = createRouter()
                   },
                 });
               }
+
               const newFoodieGroup = await prisma.foodieGroup.create({
                 data: {},
               });
@@ -118,8 +119,14 @@ export const foodRouter = createRouter()
       });
 
       if (count === 1) {
+        // onDelete: setNull for user.foodieGroupId
         await prisma.foodieGroup.delete({
           where: { id: session?.user?.foodieGroupId },
+        });
+
+        await prisma.user.updateMany({
+          where: { foodieGroupId: session?.user?.foodieGroupId },
+          data: { foodieGroupId: null },
         });
       }
     },

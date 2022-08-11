@@ -23,16 +23,13 @@ export type GroupUserState = {
   restaurants: SelectedRestaurant[];
 };
 
+export type GroupState = Record<string, GroupUserState>;
+
 export type GroupInvitation = {
   from: string;
   foodieGroupId: string;
   to: string;
   ack: boolean;
-};
-
-export type ToastNotification = {
-  title: string;
-  id: number;
 };
 
 export type ServerToClientEvents = {

@@ -29,10 +29,7 @@ export const makeAuthOptions = (
     }),
   ],
   adapter: PrismaAdapter(prisma),
-  session: {
-    maxAge: 3600, // 1h
-  },
-  debug: true,
+  debug: process.env.NODE_ENV === "development",
 });
 
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
