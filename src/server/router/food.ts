@@ -41,6 +41,11 @@ export const foodRouter = createRouter()
                     id: currentUser.foodieGroupId,
                   },
                 });
+
+                await prisma.user.updateMany({
+                  where: { foodieGroupId: session?.user?.foodieGroupId },
+                  data: { foodieGroupId: null },
+                });
               }
 
               const newFoodieGroup = await prisma.foodieGroup.create({
@@ -100,6 +105,11 @@ export const foodRouter = createRouter()
       if (count === 1) {
         await prisma.foodieGroup.delete({
           where: { id: sender.foodieGroupId },
+        });
+
+        await prisma.user.updateMany({
+          where: { foodieGroupId: sender.foodieGroupId },
+          data: { foodieGroupId: null },
         });
       }
 
