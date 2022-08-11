@@ -44,6 +44,7 @@ function invitationReducer(
   invitations: Invitation[],
   action: InvitationsReducerAction
 ) {
+  console.log("invitations dispatch", { invitations, action });
   const { type } = action;
   switch (type) {
     case "add": {

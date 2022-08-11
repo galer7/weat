@@ -1,9 +1,9 @@
 import { trpc } from "@/utils/trpc";
 import { Dispatch, SetStateAction } from "react";
-import type { GroupUserState } from "@/utils/types";
+import type { GroupState, GroupUserState } from "@/utils/types";
 import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
-import { useLoggedInUser } from "@/state/LoggedUserContext";
+import { useLoggedUser } from "@/state/LoggedUserContext";
 import { User } from "next-auth";
 
 interface InviteFormFields extends HTMLFormControlsCollection {
@@ -22,7 +22,7 @@ export default function InviteModal({
   const inviteMutation = trpc.useMutation("food.invite");
   const socket = useSocket();
   const { groupState, dispatch: groupStateDispatch } = useGroupState();
-  const { loggedInUser, dispatch } = useLoggedInUser();
+  const { loggedUser, dispatch } = useLoggedUser();
 
   const handleInviteSubmit = async (event: React.FormEvent<InviteForm>) => {
     event.preventDefault();
@@ -32,7 +32,7 @@ export default function InviteModal({
     } = event.currentTarget.elements;
 
     await inviteMutation.mutate(
-      { to: [username], from: loggedInUser?.name as string },
+      { to: [username], from: loggedUser?.name as string },
       {
         async onSuccess([newFoodieGroupId]) {
           setIsComponentVisible(false);
@@ -40,7 +40,7 @@ export default function InviteModal({
           dispatch({
             type: "overwrite",
             payload: {
-              ...(loggedInUser as User),
+              ...(loggedUser as User),
               foodieGroupId: newFoodieGroupId as string,
             },
           });
@@ -49,11 +49,13 @@ export default function InviteModal({
 
           socket.emit(
             "user:invite:sent",
-            loggedInUser?.name as string,
+            loggedUser?.name as string,
             username,
             // either foodie group was just created, either it existed from SSR
-            newFoodieGroupId || (loggedInUser?.foodieGroupId as string), // loggedInUser?.foodieGroupId is still from closure
-            groupState[loggedInUser?.name as string] as GroupUserState
+            newFoodieGroupId || (loggedUser?.foodieGroupId as string), // loggedUser?.foodieGroupId is still from closure
+            (groupState as GroupState)[
+              loggedUser?.name as string
+            ] as GroupUserState
           );
 
           // add to groupState as empty object
@@ -79,7 +81,7 @@ export default function InviteModal({
             <input
               type="text"
               id="username"
-              className="border-black border-2"
+              className="border-black border-2 text-black"
             />
           </label>
           <input type="submit" value="submit" />

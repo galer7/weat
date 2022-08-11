@@ -5,12 +5,24 @@ import type { AppRouter } from "@/server/router";
 import { SessionProvider } from "next-auth/react";
 import superjson from "superjson";
 import { SocketProvider } from "@/state/SocketContext";
+import { LoggedUserProvider } from "@/state/LoggedUserContext";
+import { GroupStateProvider } from "@/state/GroupStateContext";
+import { InvitationProvider } from "@/state/InvitationsContext";
+import { NotificationProvider } from "@/state/NotificationsContext";
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   return (
     <SocketProvider>
       <SessionProvider session={session}>
-        <Component {...pageProps} />
+        <LoggedUserProvider>
+          <GroupStateProvider>
+            <InvitationProvider>
+              <NotificationProvider>
+                <Component {...pageProps} />
+              </NotificationProvider>
+            </InvitationProvider>
+          </GroupStateProvider>
+        </LoggedUserProvider>
       </SessionProvider>
     </SocketProvider>
   );

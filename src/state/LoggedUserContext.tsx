@@ -7,36 +7,33 @@ import {
   Dispatch,
 } from "react";
 
-const LoggedInUserContext = createContext<{
-  loggedInUser: User | null;
-  dispatch: Dispatch<LoggedInUserReducerAction>;
+const LoggedUserContext = createContext<{
+  loggedUser: User | null;
+  dispatch: Dispatch<LoggedUserReducerAction>;
 }>({
-  loggedInUser: null,
+  loggedUser: null,
   dispatch: () => {},
 });
 
-export function LoggedInUserProvider({
-  children,
-  user,
-}: {
-  children: ReactNode;
-  user: User;
-}) {
-  const [loggedInUser, dispatch] = useReducer(loggedInUserReducer, user);
+export function LoggedUserProvider({ children }: { children: ReactNode }) {
+  const [loggedUser, dispatch] = useReducer(loggedUserReducer, null);
 
   return (
-    <LoggedInUserContext.Provider value={{ loggedInUser, dispatch }}>
+    <LoggedUserContext.Provider value={{ loggedUser, dispatch }}>
       {children}
-    </LoggedInUserContext.Provider>
+    </LoggedUserContext.Provider>
   );
 }
 
-type LoggedInUserReducerAction = { type: "overwrite"; payload: User };
+type LoggedUserReducerAction = { type: "overwrite"; payload: User };
 
-function loggedInUserReducer(user: User, action: LoggedInUserReducerAction) {
+function loggedUserReducer(user: User | null, action: LoggedUserReducerAction) {
+  console.log("logged user dispatch", { user, action });
   const { type, payload } = action;
   switch (type) {
     case "overwrite": {
+      if (!payload?.foodieGroupId) {
+      }
       return payload;
     }
     default:
@@ -45,6 +42,6 @@ function loggedInUserReducer(user: User, action: LoggedInUserReducerAction) {
   }
 }
 
-export function useLoggedInUser() {
-  return useContext(LoggedInUserContext);
+export function useLoggedUser() {
+  return useContext(LoggedUserContext);
 }

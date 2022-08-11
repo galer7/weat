@@ -1,25 +1,25 @@
 import { useEffect, useState } from "react";
 import { getLocalGroupState, setLocalGroupState } from "@/utils/localStorage";
-import type { SelectedRestaurant } from "@/utils/types";
+import type { GroupState, SelectedRestaurant } from "@/utils/types";
 import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
-import { useLoggedInUser } from "@/state/LoggedUserContext";
+import { useLoggedUser } from "@/state/LoggedUserContext";
 
 const MainSelector = ({ name }: { name: string }) => {
   const socket = useSocket();
-  const { loggedInUser } = useLoggedInUser();
+  const { loggedUser } = useLoggedUser();
   const { groupState, dispatch } = useGroupState();
 
-  const loggedInName = loggedInUser?.name;
-  const isCurrentUser = name === loggedInName;
-  const loggedInUserState = groupState[loggedInName as string];
-  const currentUserState = groupState[name]
+  const loggedName = loggedUser?.name;
+  const isCurrentUser = name === loggedName;
+  const loggedUserState = (groupState as GroupState)[loggedName as string];
+  const currentUserState = (groupState as GroupState)[name]
     ?.restaurants as SelectedRestaurant[];
   const [isFirstRender, setIsFirstRender] = useState(true);
 
   useEffect(() => {
     if (!isCurrentUser) return;
-    if (!loggedInUser?.foodieGroupId) {
+    if (!loggedUser?.foodieGroupId) {
       // local storage while not in a group
       if (isFirstRender) {
         setIsFirstRender(false);
@@ -34,26 +34,26 @@ const MainSelector = ({ name }: { name: string }) => {
     } else {
       if (isFirstRender) {
         setIsFirstRender(false);
-        socket.emit("user:first:render", loggedInUser?.foodieGroupId as string);
+        socket.emit("user:first:render", loggedUser?.foodieGroupId as string);
         return;
       }
 
       console.log("fired emit user:state:updated", [
-        loggedInName,
-        loggedInUser.foodieGroupId,
-        loggedInUserState,
+        loggedName,
+        loggedUser.foodieGroupId,
+        loggedUserState,
       ]);
 
-      console.log({ loggedInUserState });
+      console.log({ loggedUserState });
       socket.emit(
         "user:state:updated",
-        loggedInName,
-        loggedInUser.foodieGroupId as string,
-        loggedInUserState
+        loggedName,
+        loggedUser.foodieGroupId as string,
+        loggedUserState
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loggedInUserState]);
+  }, [loggedUserState]);
 
   return (
     <div>

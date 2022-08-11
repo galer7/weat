@@ -7,7 +7,7 @@ import {
 } from "react";
 import { v4 } from "uuid";
 
-type Notification = {
+export type Notification = {
   title: string;
   id: string;
 };
@@ -42,6 +42,7 @@ function notificationsReducer(
   notifications: Notification[],
   action: NotificationsReducerAction
 ) {
+  console.log("notifications dispatch", { notifications, action });
   const { type } = action;
   switch (type) {
     case "add": {
@@ -66,7 +67,7 @@ export function useNotifications() {
 
     setTimeout(() => {
       dispatch({ type: "remove", id: id });
-    });
+    }, 5000);
   };
 
   return { dispatch, notifications, addTemporaryToast };

@@ -14,21 +14,15 @@ import {
 } from "react";
 
 const GroupStateContext = createContext<{
-  groupState: GroupState;
+  groupState: GroupState | null;
   dispatch: Dispatch<GroupStateReducerAction>;
 }>({
-  groupState: {},
+  groupState: null,
   dispatch: () => {},
 });
 
-export function GroupStateProvider({
-  children,
-  initialState,
-}: {
-  children: ReactNode;
-  initialState: GroupState;
-}) {
-  const [groupState, dispatch] = useReducer(groupStateReducer, initialState);
+export function GroupStateProvider({ children }: { children: ReactNode }) {
+  const [groupState, dispatch] = useReducer(groupStateReducer, null);
 
   return (
     <GroupStateContext.Provider value={{ groupState, dispatch }}>
@@ -88,9 +82,19 @@ type GroupStateReducerAction =
     };
 
 const groupStateReducer = (
-  groupState: GroupState,
+  groupState: GroupState | null,
   action: GroupStateReducerAction
 ) => {
+  console.log("group state dispatch", action);
+
+  if (!groupState) {
+    if (action.type === "overwrite") {
+      return action.overwriteState;
+    }
+
+    return null;
+  }
+
   if (action.type === "overwrite") {
     return action.overwriteState;
   }

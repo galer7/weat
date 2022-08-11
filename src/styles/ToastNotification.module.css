@@ -1,20 +1,22 @@
 @keyframes fadeOutAnimation {
-    0% {
-        opacity: 1;
-    }
+  0% {
+    opacity: 1;
+  }
 
-    75% {
-        opacity: 1;
-    }
+  75% {
+    opacity: 1;
+  }
 
-    100% {
-        display: none;
-        opacity: 0;
-    }
+  100% {
+    display: none;
+    opacity: 0;
+  }
 }
 
 .toastNotification {
-    animation-name: fadeOutAnimation;
-    animation-duration: 5s;
-    animation-fill-mode: forwards;
+  animation-name: fadeOutAnimation;
+  animation-duration: 5s;
+  animation-fill-mode: forwards;
+  border-width: 10px;
+  border-color: red;
 }

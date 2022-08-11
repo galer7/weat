@@ -15,7 +15,7 @@ export default function NotificationList() {
             className={cn("relative", ToastNotifStyle.toastNotification)}
             onClick={() => dispatch({ type: "remove", id })}
           >
-            <div>{title}</div>
+            <div className="text-white">{title}</div>
           </div>
         );
       })}

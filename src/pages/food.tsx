@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse, NextPage } from "next";
 import type { GetServerSidePropsContext } from "next";
-import type { GroupUserState } from "@/utils/types";
+import type { GroupState, GroupUserState } from "@/utils/types";
 import useComponentVisible from "@/hooks/useComponentVisible";
 import InviteModal from "@/components/InviteModal";
 import { unstable_getServerSession as getServerSession } from "next-auth/next";
@@ -11,16 +11,12 @@ import MainSelector from "@/components/MainSelector";
 import Loading from "@/components/Loading";
 import superjson from "superjson";
 import { setLocalGroupState } from "@/utils/localStorage";
-import { GroupStateProvider, useGroupState } from "@/state/GroupStateContext";
+import { useGroupState } from "@/state/GroupStateContext";
 import { useSocket } from "@/state/SocketContext";
 import { useNotifications } from "@/state/NotificationsContext";
 import NotificationList from "@/components/NotificationList";
 import InvitationList from "@/components/InvitationList";
-import {
-  LoggedInUserProvider,
-  useLoggedInUser,
-} from "@/state/LoggedUserContext";
-import { Session } from "next-auth";
+import { useLoggedUser } from "@/state/LoggedUserContext";
 import TopBar from "@/components/TopBar";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
@@ -48,16 +44,14 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   return {
     props: {
-      session,
+      user: session.user,
     },
   };
 }
 
-const Food: NextPage = ({
-  session,
-}: { session: Session } | Record<string, never>) => {
+// In this component i must use props.session.user instead of LoggedUserContext's user
+const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
   // save user from SSR in a state, because we will hold foodieGroupId until a refresh at some point
-  const { dispatch } = useLoggedInUser();
 
   const {
     ref: inviteModalRef,
@@ -65,13 +59,27 @@ const Food: NextPage = ({
     setIsComponentVisible,
   } = useComponentVisible<HTMLDivElement>(false);
 
-  const currentName = session.user?.name as string;
+  const currentName = user?.name as string;
 
   const socket = useSocket();
   const { addTemporaryToast } = useNotifications();
   const { groupState, dispatch: dispatchGroupState } = useGroupState();
+  const { loggedUser, dispatch: dispatchLoggedUser } = useLoggedUser();
 
   useEffect(() => {
+    if (!groupState)
+      dispatchGroupState({
+        type: "overwrite",
+        overwriteState: {
+          [user?.name as string]: {
+            isInviteAccepted: true,
+            restaurants: [],
+          },
+        },
+      });
+
+    if (!loggedUser) dispatchLoggedUser({ type: "overwrite", payload: user });
+
     socket.on("server:first:render", (stringifiedState) => {
       console.log("first render!", { stringifiedState });
       const parsedState = superjson.parse(stringifiedState) as Map<
@@ -87,7 +95,7 @@ const Food: NextPage = ({
           overwriteState: Object.fromEntries(
             new Map(
               Array.from(parsedState).sort(([a]) => {
-                if (a === session.user?.name) return -1;
+                if (a === user?.name) return -1;
                 return 1;
               })
             )
@@ -106,7 +114,7 @@ const Food: NextPage = ({
       const parsedState = superjson.parse(stringifiedState);
 
       if (!parsedState) {
-        const { [name]: _, ...restOfGroupState } = groupState;
+        const { [name]: _, ...restOfGroupState } = groupState as GroupState;
         dispatchGroupState({
           type: "overwrite",
           overwriteState: restOfGroupState,
@@ -119,10 +127,10 @@ const Food: NextPage = ({
             Object.values(restOfGroupState)[0] as GroupUserState
           );
 
-          dispatch({
+          dispatchLoggedUser({
             type: "overwrite",
             payload: {
-              ...(session?.user as User),
+              ...user,
               foodieGroupId: null,
             },
           });
@@ -132,16 +140,21 @@ const Food: NextPage = ({
           title: `${name} left your group!`,
         });
       } else {
+        if (
+          (groupState as GroupState)[name] &&
+          !(groupState as GroupState)[name]?.isInviteAccepted
+        ) {
+          addTemporaryToast({
+            title: `${name} joined your group!`,
+          });
+        }
+
         dispatchGroupState({
           type: "overwrite",
           overwriteState: {
             ...groupState,
             [name]: parsedState as GroupUserState,
           },
-        });
-
-        addTemporaryToast({
-          title: `${name} joined your group!`,
         });
       }
     });
@@ -153,21 +166,14 @@ const Food: NextPage = ({
   });
 
   return (
-    <LoggedInUserProvider user={session.user as User}>
-      <GroupStateProvider
-        initialState={{
-          [session.user?.name as string]: {
-            isInviteAccepted: true,
-            restaurants: [],
-          },
-        }}
-      >
-        <TopBar
-          isComponentVisible={isComponentVisible}
-          setIsComponentVisible={setIsComponentVisible}
-        />
-        <div className="flex gap-2 justify-evenly">
-          {Object.keys(groupState).map((name, index) => {
+    <div>
+      <TopBar
+        isComponentVisible={isComponentVisible}
+        setIsComponentVisible={setIsComponentVisible}
+      />
+      <div className="flex gap-2 justify-evenly">
+        {groupState &&
+          Object.keys(groupState).map((name, index) => {
             const isCurrentUser = name === currentName;
             return (
               <div
@@ -186,20 +192,18 @@ const Food: NextPage = ({
               </div>
             );
           })}
-        </div>
+      </div>
 
-        {/* INVITE MODAL */}
-        <div ref={inviteModalRef}>
-          {isComponentVisible && (
-            <InviteModal setIsComponentVisible={setIsComponentVisible} />
-          )}
-        </div>
-        <div className="bottom-0 right-0 fixed m-0 p-0">
-          <NotificationList />
-          <InvitationList />
-        </div>
-      </GroupStateProvider>
-    </LoggedInUserProvider>
+      <div ref={inviteModalRef}>
+        {isComponentVisible && (
+          <InviteModal setIsComponentVisible={setIsComponentVisible} />
+        )}
+      </div>
+      <div className="bottom-0 right-0 fixed m-0 p-0">
+        <NotificationList />
+        <InvitationList />
+      </div>
+    </div>
   );
 };
 
