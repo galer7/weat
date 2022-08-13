@@ -21,9 +21,9 @@ export default function TopBar({
 
   return (
     <div className="bg-black w-full flex justify-between">
-      <div className="text-white m-8 text-xl font-bold">WEAT</div>
+      <div className="text-yellow-400 m-8 text-xl font-bold">WEAT</div>
       <div className="flex justify-end gap-1">
-        <div className="text-white m-8 text-xl font-bold">
+        <div className="m-8 text-teal-200 text-xl font-bold">
           <button onClick={() => setIsComponentVisible(!isComponentVisible)}>
             INVITE
           </button>
@@ -32,7 +32,7 @@ export default function TopBar({
           {loggedUser?.foodieGroupId &&
             groupState &&
             Object.keys(groupState).length >= 2 && (
-              <div className="text-white m-8 text-xl font-bold">
+              <div className="text-teal-200 m-8 text-xl font-bold">
                 <button
                   onClick={() => {
                     leaveGroupMutation.mutate(
@@ -78,7 +78,7 @@ export default function TopBar({
               </div>
             )}
         </>
-        <div className="text-white m-8 text-xl font-bold">
+        <div className="text-teal-200  m-8 text-xl font-bold">
           <button
             onClick={() => {
               if (!loggedUser?.foodieGroupId) {

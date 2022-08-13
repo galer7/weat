@@ -56,12 +56,13 @@ const MainSelector = ({ name }: { name: string }) => {
   }, [loggedUserState]);
 
   return (
-    <div>
-      <div>Pick your food!</div>
+    <div className="flex flex-col">
       {currentUserState.map((restaurant, restaurantIndex) => (
-        <div className="border-2 border-yellow-500" key={restaurantIndex}>
-          <div>{currentUserState[restaurantIndex]?.name}</div>
-          <div className="inline">
+        <div
+          className="border-2 bg-yellow-500 border-transparent m-1 rounded-lg"
+          key={restaurantIndex}
+        >
+          <div className="flex justify-evenly">
             {isCurrentUser && (
               <button
                 onClick={() =>
@@ -76,6 +77,7 @@ const MainSelector = ({ name }: { name: string }) => {
                 {"<"}
               </button>
             )}
+            <div>{currentUserState[restaurantIndex]?.name}</div>
             {isCurrentUser && (
               <button
                 onClick={() =>
@@ -90,22 +92,19 @@ const MainSelector = ({ name }: { name: string }) => {
                 {">"}
               </button>
             )}
-            {isCurrentUser && (
-              <button
-                onClick={() =>
-                  dispatch({ type: "restaurant:remove", restaurantIndex, name })
-                }
-              >
-                - Restaurant {restaurant.name}
-              </button>
-            )}
           </div>
+          {isCurrentUser && (
+            <button
+              onClick={() =>
+                dispatch({ type: "restaurant:remove", restaurantIndex, name })
+              }
+            >
+              - Restaurant {restaurant.name}
+            </button>
+          )}
           {restaurant.items.map((food, foodItemIndex: number) => (
             <div key={foodItemIndex}>
-              <div>
-                {food.name} ${food.price.toFixed(2)}
-              </div>
-              <div className="inline">
+              <div className="flex justify-evenly">
                 {isCurrentUser && (
                   <button
                     onClick={() =>
@@ -121,6 +120,10 @@ const MainSelector = ({ name }: { name: string }) => {
                     {"<"}
                   </button>
                 )}
+                <div>
+                  <p>{food.name}</p>
+                  <p>${food.price.toFixed(2)}</p>
+                </div>
                 {isCurrentUser && (
                   <button
                     onClick={() =>
@@ -136,21 +139,21 @@ const MainSelector = ({ name }: { name: string }) => {
                     {">"}
                   </button>
                 )}
-                {isCurrentUser && (
-                  <button
-                    onClick={() =>
-                      dispatch({
-                        type: "food:remove",
-                        foodItemIndex,
-                        restaurantIndex,
-                        name,
-                      })
-                    }
-                  >
-                    - Food {food.name}
-                  </button>
-                )}
               </div>
+              {isCurrentUser && (
+                <button
+                  onClick={() =>
+                    dispatch({
+                      type: "food:remove",
+                      foodItemIndex,
+                      restaurantIndex,
+                      name,
+                    })
+                  }
+                >
+                  - Food {food.name}
+                </button>
+              )}
             </div>
           ))}
           {isCurrentUser && (
@@ -166,11 +169,20 @@ const MainSelector = ({ name }: { name: string }) => {
               + Food
             </button>
           )}
+          {isCurrentUser && (
+            <button
+              onClick={() =>
+                dispatch({ type: "restaurant:remove", restaurantIndex, name })
+              }
+            >
+              - Restaurant {restaurant.name}
+            </button>
+          )}
         </div>
       ))}
       {isCurrentUser && (
         <button
-          className="rounded-md bg-black text-blue-600 p-2 h-8 text-center"
+          className="rounded-lg bg-black text-yellow-200 p-1 text-center mt-2"
           onClick={() =>
             dispatch({
               type: "restaurant:add",
@@ -178,7 +190,7 @@ const MainSelector = ({ name }: { name: string }) => {
             })
           }
         >
-          + Restaurant
+          Add Restaurant
         </button>
       )}
     </div>

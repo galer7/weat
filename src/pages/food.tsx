@@ -18,6 +18,8 @@ import NotificationList from "@/components/NotificationList";
 import InvitationList from "@/components/InvitationList";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 import TopBar from "@/components/TopBar";
+import { getProviders, signIn } from "next-auth/react";
+import Image from "next/image";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // Get user id
@@ -41,7 +43,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   }
 
   console.log("session.user ssr in plm", session.user);
-
+  console.log(await getProviders());
   return {
     props: {
       user: session.user,
@@ -176,11 +178,21 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
           Object.keys(groupState).map((name, index) => {
             const isCurrentUser = name === currentName;
             return (
-              <div
-                className={`m-8 ${isCurrentUser && "border-red-600 border-2"}`}
-                key={index}
-              >
-                <div className="m-4">{name}</div>
+              <div className={`m-8`} key={index}>
+                <div className="flex flex-col">
+                  {user.image && (
+                    <div className="h-24 w-24 relative mx-auto mt-3">
+                      <Image
+                        className="rounded-full"
+                        layout="fill"
+                        objectFit="cover"
+                        src={user.image}
+                        alt={`Profile picture of ${name}`}
+                      />
+                    </div>
+                  )}
+                  <div className="m-4 text-center">{name}</div>
+                </div>
                 {groupState[name]?.isInviteAccepted ? (
                   <MainSelector name={name} />
                 ) : (
