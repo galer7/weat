@@ -8,7 +8,7 @@ import { User } from "next-auth";
 import { useEffect } from "react";
 
 export default function InvitationList() {
-  const socket = useSocket();
+  const { socket } = useSocket();
   const { invitations, dispatch: invitationsDispatch } = useInvitations();
   const { groupState } = useGroupState();
   const { dispatch, loggedUser } = useLoggedUser();

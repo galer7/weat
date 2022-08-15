@@ -16,7 +16,7 @@ export default function TopBar({
 }) {
   const leaveGroupMutation = trpc.useMutation("food.leave-group");
   const { groupState, dispatch: groupStateDispatch } = useGroupState();
-  const socket = useSocket();
+  const { socket } = useSocket();
   const { loggedUser, dispatch } = useLoggedUser();
 
   return (

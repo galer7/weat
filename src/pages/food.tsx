@@ -18,7 +18,7 @@ import NotificationList from "@/components/NotificationList";
 import InvitationList from "@/components/InvitationList";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 import TopBar from "@/components/TopBar";
-import { getProviders, signIn } from "next-auth/react";
+import { getProviders } from "next-auth/react";
 import Image from "next/image";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
@@ -42,19 +42,21 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
-  console.log("session.user ssr in plm", session.user);
+  console.log("session ssr", session);
   console.log(await getProviders());
   return {
     props: {
       user: session.user,
+      sessionToken: context.req.cookies["next-auth.session-token"],
     },
   };
 }
 
 // In this component i must use props.session.user instead of LoggedUserContext's user
-const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
-  // save user from SSR in a state, because we will hold foodieGroupId until a refresh at some point
-
+const Food: NextPage = ({
+  user,
+  sessionToken,
+}: { user: User; sessionToken: string } | Record<string, never>) => {
   const {
     ref: inviteModalRef,
     isComponentVisible,
@@ -63,12 +65,14 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
 
   const currentName = user?.name as string;
 
-  const socket = useSocket();
+  const { socket, dispatch: dispatchSocket } = useSocket();
   const { addTemporaryToast } = useNotifications();
   const { groupState, dispatch: dispatchGroupState } = useGroupState();
   const { loggedUser, dispatch: dispatchLoggedUser } = useLoggedUser();
 
   useEffect(() => {
+    dispatchSocket({ type: "set-session-token", token: sessionToken });
+
     if (!groupState)
       dispatchGroupState({
         type: "overwrite",
@@ -76,12 +80,16 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
           [user?.name as string]: {
             isInviteAccepted: true,
             restaurants: [],
+            image: user?.image as string,
           },
         },
       });
 
     if (!loggedUser) dispatchLoggedUser({ type: "overwrite", payload: user });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  useEffect(() => {
     socket.on("server:first:render", (stringifiedState) => {
       console.log("first render!", { stringifiedState });
       const parsedState = superjson.parse(stringifiedState) as Map<
@@ -90,7 +98,7 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
       >;
 
       // on first render, state comes as a ES6 Map
-      // On the WS server, the group state is persisted as a ES6 Map
+      // on the WS server, the group state is persisted as a ES6 Map
       if (parsedState) {
         dispatchGroupState({
           type: "overwrite",
@@ -176,18 +184,18 @@ const Food: NextPage = ({ user }: { user: User } | Record<string, never>) => {
       <div className="flex gap-2 justify-evenly">
         {groupState &&
           Object.keys(groupState).map((name, index) => {
-            const isCurrentUser = name === currentName;
             return (
               <div className={`m-8`} key={index}>
                 <div className="flex flex-col">
-                  {user.image && (
+                  {groupState[name]?.image && (
                     <div className="h-24 w-24 relative mx-auto mt-3">
                       <Image
                         className="rounded-full"
                         layout="fill"
                         objectFit="cover"
-                        src={user.image}
+                        src={(groupState[name] as GroupUserState).image}
                         alt={`Profile picture of ${name}`}
+                        priority={true}
                       />
                     </div>
                   )}

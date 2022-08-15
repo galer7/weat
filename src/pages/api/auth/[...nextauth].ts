@@ -10,8 +10,8 @@ export const makeAuthOptions = (
   res: NextApiResponse
 ): NextAuthOptions => ({
   callbacks: {
-    session({ session, user }) {
-      console.log("session", { session, user });
+    session({ session, user, token }) {
+      console.log("session", { session, user, token });
       (session.user as User).foodieGroupId = user.foodieGroupId as
         | string
         | null;

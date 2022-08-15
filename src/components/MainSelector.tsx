@@ -6,7 +6,7 @@ import { useGroupState } from "@/state/GroupStateContext";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 
 const MainSelector = ({ name }: { name: string }) => {
-  const socket = useSocket();
+  const { socket } = useSocket();
   const { loggedUser } = useLoggedUser();
   const { groupState, dispatch } = useGroupState();
 

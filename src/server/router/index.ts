@@ -8,7 +8,7 @@ import superjson from "superjson";
 
 export const appRouter = createRouter()
   .transformer(superjson)
-  .merge("auth.", authRouter)
+  //   .merge("auth.", authRouter)
   .middleware(async ({ ctx, next }) => {
     // Any queries or mutations after this middleware will
     // raise an error unless there is a current session

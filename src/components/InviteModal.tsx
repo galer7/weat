@@ -20,7 +20,7 @@ export default function InviteModal({
   setIsComponentVisible: Dispatch<SetStateAction<boolean>>;
 }) {
   const inviteMutation = trpc.useMutation("food.invite");
-  const socket = useSocket();
+  const { socket } = useSocket();
   const { groupState, dispatch: groupStateDispatch } = useGroupState();
   const { loggedUser, dispatch } = useLoggedUser();
 
@@ -63,7 +63,11 @@ export default function InviteModal({
             type: "overwrite",
             overwriteState: {
               ...groupState,
-              [username]: { isInviteAccepted: false, restaurants: [] },
+              [username]: {
+                isInviteAccepted: false,
+                restaurants: [],
+                image: loggedUser?.image as string,
+              },
             },
           });
         },
