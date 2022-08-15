@@ -31,7 +31,7 @@ export default function InviteModal({
       username: { value: username },
     } = event.currentTarget.elements;
 
-    await inviteMutation.mutate(
+    inviteMutation.mutate(
       { to: [username], from: loggedUser?.name as string },
       {
         async onSuccess([newFoodieGroupId]) {
@@ -67,16 +67,24 @@ export default function InviteModal({
             },
           });
         },
+        onError(error, variables, context) {
+          console.error(error);
+        },
       }
     );
   };
 
   return (
-    <div className="fixed w-1/2 h-1/2 top-0 left-0 z-10 bg-sky-700">
-      <div>Invite a friend</div>
-      <form action="" className="w-1/2" onSubmit={handleInviteSubmit}>
-        <fieldset disabled={inviteMutation.isLoading}>
-          <label className="flex gap-2 justify-around">
+    <div className="fixed z-10 bg-black rounded-lg border-yellow-500 border-4 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-20">
+      <div className="text-center text-7xl text-teal-200 mt-4">
+        Invite a friend
+      </div>
+      <form action="" className="" onSubmit={handleInviteSubmit}>
+        <fieldset
+          disabled={inviteMutation.isLoading}
+          className="flex justify-center items-center mt-14 gap-10"
+        >
+          <label className="flex flex-col items-center gap-2 justify-around text-center text-xl">
             Username
             <input
               type="text"
@@ -84,7 +92,11 @@ export default function InviteModal({
               className="border-black border-2 text-black"
             />
           </label>
-          <input type="submit" value="submit" />
+          <input
+            type="submit"
+            value="SUBMIT"
+            className="bg-gray-800 rounded-lg p-2 h-10 mt-4 cursor-pointer"
+          />
         </fieldset>
       </form>
     </div>

@@ -19,6 +19,7 @@ export const makeAuthOptions = (
       return session;
     },
     redirect(params) {
+      if (req.url?.includes("signout")) return `${params.baseUrl}`;
       return `${params.baseUrl}/food`;
     },
   },

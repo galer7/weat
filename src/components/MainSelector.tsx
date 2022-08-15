@@ -59,9 +59,19 @@ const MainSelector = ({ name }: { name: string }) => {
     <div className="flex flex-col">
       {currentUserState.map((restaurant, restaurantIndex) => (
         <div
-          className="border-2 bg-yellow-500 border-transparent m-1 rounded-lg"
+          className="border-2 bg-yellow-500 border-transparent m-1 rounded-lg relative"
           key={restaurantIndex}
         >
+          <div className="absolute top-0 right-1">
+            <button
+              className="text-red-600"
+              onClick={() =>
+                dispatch({ type: "restaurant:remove", restaurantIndex, name })
+              }
+            >
+              ✕
+            </button>
+          </div>
           <div className="flex justify-evenly">
             {isCurrentUser && (
               <button
@@ -93,91 +103,76 @@ const MainSelector = ({ name }: { name: string }) => {
               </button>
             )}
           </div>
-          {isCurrentUser && (
-            <button
-              onClick={() =>
-                dispatch({ type: "restaurant:remove", restaurantIndex, name })
-              }
-            >
-              - Restaurant {restaurant.name}
-            </button>
-          )}
-          {restaurant.items.map((food, foodItemIndex: number) => (
-            <div key={foodItemIndex}>
-              <div className="flex justify-evenly">
-                {isCurrentUser && (
+          <div className="bg-black rounded-lg">
+            {restaurant.items.map((food, foodItemIndex: number) => (
+              <div key={foodItemIndex} className="relative">
+                <div className="absolute top-0 right-1">
                   <button
+                    className="text-red-600"
                     onClick={() =>
                       dispatch({
-                        type: "food:change",
-                        delta: -1,
+                        type: "food:remove",
                         foodItemIndex,
                         restaurantIndex,
                         name,
                       })
                     }
                   >
-                    {"<"}
+                    ✕
                   </button>
-                )}
-                <div>
-                  <p>{food.name}</p>
-                  <p>${food.price.toFixed(2)}</p>
                 </div>
-                {isCurrentUser && (
-                  <button
-                    onClick={() =>
-                      dispatch({
-                        type: "food:change",
-                        delta: 1,
-                        foodItemIndex,
-                        restaurantIndex,
-                        name,
-                      })
-                    }
-                  >
-                    {">"}
-                  </button>
-                )}
+                <div className="flex justify-evenly">
+                  {isCurrentUser && (
+                    <button
+                      onClick={() =>
+                        dispatch({
+                          type: "food:change",
+                          delta: -1,
+                          foodItemIndex,
+                          restaurantIndex,
+                          name,
+                        })
+                      }
+                    >
+                      {"<"}
+                    </button>
+                  )}
+                  <div>
+                    <p>{food.name}</p>
+                    <p>${food.price.toFixed(2)}</p>
+                  </div>
+                  {isCurrentUser && (
+                    <button
+                      onClick={() =>
+                        dispatch({
+                          type: "food:change",
+                          delta: 1,
+                          foodItemIndex,
+                          restaurantIndex,
+                          name,
+                        })
+                      }
+                    >
+                      {">"}
+                    </button>
+                  )}
+                </div>
               </div>
-              {isCurrentUser && (
-                <button
-                  onClick={() =>
-                    dispatch({
-                      type: "food:remove",
-                      foodItemIndex,
-                      restaurantIndex,
-                      name,
-                    })
-                  }
-                >
-                  - Food {food.name}
-                </button>
-              )}
-            </div>
-          ))}
-          {isCurrentUser && (
-            <button
-              onClick={() =>
-                dispatch({
-                  type: "food:add",
-                  restaurantIndex,
-                  name,
-                })
-              }
-            >
-              + Food
-            </button>
-          )}
-          {isCurrentUser && (
-            <button
-              onClick={() =>
-                dispatch({ type: "restaurant:remove", restaurantIndex, name })
-              }
-            >
-              - Restaurant {restaurant.name}
-            </button>
-          )}
+            ))}
+            {isCurrentUser && (
+              <button
+                onClick={() =>
+                  dispatch({
+                    type: "food:add",
+                    restaurantIndex,
+                    name,
+                  })
+                }
+              >
+                + Food
+              </button>
+            )}
+          </div>
         </div>
       ))}
       {isCurrentUser && (
