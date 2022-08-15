@@ -7,7 +7,7 @@ const Home: NextPage = () => {
     <div>
       <main>
         <div className="absolute left-0 right-0 bottom-0 top-1/3">
-          <p className="text-9xl text-center text-yellow-400">WEAT</p>
+          <p className="text-9xl text-center text-yellow-500">WEAT</p>
           <p className="text-center text-white italic">
             Collaborative layer on top of food delivery service
           </p>

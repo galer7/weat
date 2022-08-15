@@ -12,10 +12,13 @@ export default function NotificationList() {
         return (
           <div
             key={index}
-            className={cn("relative", ToastNotifStyle.toastNotification)}
+            className={cn(
+              "relative bg-yellow-500 rounded-lg p-2",
+              ToastNotifStyle.toastNotification
+            )}
             onClick={() => dispatch({ type: "remove", id })}
           >
-            <div className="text-white">{title}</div>
+            <div className="text-black">{title}</div>
           </div>
         );
       })}

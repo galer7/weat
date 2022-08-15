@@ -32,54 +32,65 @@ export default function InvitationList() {
       {groupState &&
         invitations.map(({ from, foodieGroupId, to }, index) => {
           return (
-            <div key={index} className="relative">
-              <div>Invite received from {from}</div>
-              <button
-                onClick={() => {
-                  acceptInviteMutation.mutate(
-                    { from },
-                    {
-                      onSuccess() {
-                        dispatch({
-                          type: "overwrite",
-                          payload: {
-                            ...(loggedUser as User),
+            <div key={index} className="relative bg-black rounded-xl p-2">
+              <div>
+                Invite received from{" "}
+                <span className="text-yellow-500">{from}</span>
+              </div>
+              <div className="flex justify-evenly mt-2">
+                <button
+                  className="bg-green-500 rounded-lg p-2"
+                  onClick={() => {
+                    acceptInviteMutation.mutate(
+                      { from },
+                      {
+                        onSuccess() {
+                          dispatch({
+                            type: "overwrite",
+                            payload: {
+                              ...(loggedUser as User),
+                              foodieGroupId,
+                            },
+                          });
+
+                          socket.emit(
+                            "user:invite:response",
+                            to,
                             foodieGroupId,
-                          },
-                        });
+                            groupState[to] as GroupUserState
+                          );
 
-                        socket.emit(
-                          "user:invite:response",
-                          to,
-                          foodieGroupId,
-                          groupState[to] as GroupUserState
-                        );
+                          invitationsDispatch({ type: "accept" });
+                        },
+                      }
+                    );
+                  }}
+                >
+                  Accept ✓
+                </button>
+                <button
+                  className="bg-red-600 p-2 rounded-lg"
+                  onClick={() => {
+                    refuseInviteMutation.mutate(
+                      { from },
+                      {
+                        onSuccess() {
+                          socket.emit(
+                            "user:invite:response",
+                            to,
+                            foodieGroupId
+                          );
 
-                        invitationsDispatch({ type: "accept" });
-                      },
-                    }
-                  );
-                }}
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => {
-                  refuseInviteMutation.mutate(
-                    { from },
-                    {
-                      onSuccess() {
-                        socket.emit("user:invite:response", to, foodieGroupId);
-
-                        // delete just the refused invitation
-                        invitationsDispatch({ type: "refuse", id: index });
-                      },
-                    }
-                  );
-                }}
-              >
-                Refuse
-              </button>
+                          // delete just the refused invitation
+                          invitationsDispatch({ type: "refuse", id: index });
+                        },
+                      }
+                    );
+                  }}
+                >
+                  Refuse ✕
+                </button>
+              </div>
             </div>
           );
         })}

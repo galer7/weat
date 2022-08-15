@@ -17,6 +17,4 @@
   animation-name: fadeOutAnimation;
   animation-duration: 5s;
   animation-fill-mode: forwards;
-  border-width: 10px;
-  border-color: red;
 }

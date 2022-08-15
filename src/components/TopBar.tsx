@@ -21,7 +21,7 @@ export default function TopBar({
 
   return (
     <div className="bg-black w-full flex justify-between">
-      <div className="text-yellow-400 m-8 text-xl font-bold">WEAT</div>
+      <div className="text-yellow-500 m-8 text-xl font-bold">WEAT</div>
       <div className="flex justify-end gap-1">
         <div className="m-8 text-teal-200 text-xl font-bold">
           <button onClick={() => setIsComponentVisible(!isComponentVisible)}>
