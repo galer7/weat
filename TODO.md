@@ -17,9 +17,10 @@
 - [x] add refuse invite button
 - [x] persist invites
 - [ ] send invite after user with pending invite reloaded the page
-- [ ] bug: session dies unexpectedly
-- [ ] bug: cannot login after sign-out on non-private browser instance
-- [ ] implement online users list on invite submit form
+- [x] bug: session dies unexpectedly
+- [x] bug: cannot login after sign-out on non-private browser instance
+- [x] implement online users list on invite submit form
+- [ ] make online status depend on WS server socket activity (sockets that are linked to user sessions)
 - [ ] add order now button
 - [ ] add group orders list
 - [x] add user events popup notifications (e.g. user joined your group, user left your group)

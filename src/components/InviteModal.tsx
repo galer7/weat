@@ -88,7 +88,7 @@ export default function InviteModal({
       <div className="text-center text-7xl text-teal-200 mt-4">
         Invite a friend
       </div>
-      <form action="" onSubmit={handleInviteSubmit}>
+      <form action="" onSubmit={handleInviteSubmit} autoComplete="off">
         <fieldset
           disabled={inviteMutation.isLoading}
           className="flex justify-center items-center mt-14 gap-10"
@@ -99,9 +99,13 @@ export default function InviteModal({
               type="text"
               id="username"
               className="border-black border-2 text-black"
+              value={usersFetchQuery}
+              autoFocus
               onChange={async (e) => {
                 console.log("on change ", e.target.value);
                 setUsersFetchQuery(e.target.value);
+
+                // refetch cancels any currently running requests before requesting again
                 getUsersForSearchQuery.refetch();
               }}
             />
@@ -120,7 +124,14 @@ export default function InviteModal({
           <ul>
             {getUsersForSearchQuery.isSuccess &&
               getUsersForSearchQuery.data.map((user) => (
-                <li key={user.id}>
+                <li
+                  key={user.id}
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setUsersFetchQuery(user.name);
+                    getUsersForSearchQuery.refetch();
+                  }}
+                >
                   <div className="flex gap-5">
                     <div>{user.online ? "🟢" : "🔴"}</div>
                     <div>{user.name}</div>

@@ -9,12 +9,12 @@ export const usersRouter = createRouter().query("getForSearch", {
   async resolve({ input: { search } }) {
     let rawResults;
     if (!search) {
-      rawResults = prisma.user.findMany({
+      rawResults = await prisma.user.findMany({
         where: {},
         include: { sessions: {} },
       });
     } else {
-      rawResults = prisma.user.findMany({
+      rawResults = await prisma.user.findMany({
         where: {
           name: {
             search: `${search}*`,
@@ -24,7 +24,7 @@ export const usersRouter = createRouter().query("getForSearch", {
       });
     }
 
-    return (await rawResults).map(({ sessions, ...restOfUser }) => ({
+    return rawResults.map(({ sessions, ...restOfUser }) => ({
       ...restOfUser,
       online: sessions.some(({ expires }) => expires >= new Date()),
     }));
