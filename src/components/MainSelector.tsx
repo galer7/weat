@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { getLocalGroupState, setLocalGroupState } from "@/utils/localStorage";
 import type { GroupState, SelectedRestaurant } from "@/utils/types";
 import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
@@ -23,13 +22,8 @@ const MainSelector = ({ name }: { name: string }) => {
       // local storage while not in a group
       if (isFirstRender) {
         setIsFirstRender(false);
-        const parsedLocalStorage = getLocalGroupState();
-        if (!parsedLocalStorage) return;
 
-        dispatch({
-          type: "overwrite",
-          overwriteState: { [name]: parsedLocalStorage },
-        });
+        // TODO: local storage stuff
       }
     } else {
       if (isFirstRender) {
@@ -74,7 +68,7 @@ const MainSelector = ({ name }: { name: string }) => {
               </button>
             </div>
           )}
-          <div className="flex justify-start gap-5 ml-10">
+          <div className="flex justify-start gap-5 ml-2">
             {isCurrentUser && (
               <button
                 className="text-black"
