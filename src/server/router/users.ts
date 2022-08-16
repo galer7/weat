@@ -1,21 +1,32 @@
 import { createRouter } from "./context";
 import { prisma } from "@/server/db/client";
+import { z } from "zod";
 
-export const usersRouter = createRouter()
-  .query("getAll", {
-    async resolve() {
-      return prisma.user.findMany({ where: {}, select: { name: true } });
-    },
-  })
-  .query("getAllOnline", {
-    async resolve() {
-      return prisma.user.findMany({
+export const usersRouter = createRouter().query("getForSearch", {
+  input: z.object({
+    search: z.string(),
+  }),
+  async resolve({ input: { search } }) {
+    let rawResults;
+    if (!search) {
+      rawResults = prisma.user.findMany({
+        where: {},
+        include: { sessions: {} },
+      });
+    } else {
+      rawResults = prisma.user.findMany({
         where: {
-          sessions: {
-            some: {},
+          name: {
+            search: `${search}*`,
           },
         },
-        select: { name: true },
+        include: { sessions: {} },
       });
-    },
-  });
+    }
+
+    return (await rawResults).map(({ sessions, ...restOfUser }) => ({
+      ...restOfUser,
+      online: sessions.some(({ expires }) => expires >= new Date()),
+    }));
+  },
+});

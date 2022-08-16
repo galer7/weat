@@ -61,7 +61,7 @@ const Food: NextPage = ({
     ref: inviteModalRef,
     isComponentVisible,
     setIsComponentVisible,
-  } = useComponentVisible<HTMLDivElement>(false);
+  } = useComponentVisible(false);
 
   const currentName = user?.name as string;
 

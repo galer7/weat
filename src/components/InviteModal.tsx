@@ -1,5 +1,5 @@
 import { trpc } from "@/utils/trpc";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import type { GroupState, GroupUserState } from "@/utils/types";
 import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
@@ -15,7 +15,7 @@ export interface InviteForm extends HTMLFormElement {
 }
 
 export default function InviteModal({
-  setIsComponentVisible,
+  setIsComponentVisible: setIsModalVisible,
 }: {
   setIsComponentVisible: Dispatch<SetStateAction<boolean>>;
 }) {
@@ -23,6 +23,11 @@ export default function InviteModal({
   const { socket } = useSocket();
   const { groupState, dispatch: groupStateDispatch } = useGroupState();
   const { loggedUser, dispatch } = useLoggedUser();
+  const [usersFetchQuery, setUsersFetchQuery] = useState("");
+  const getUsersForSearchQuery = trpc.useQuery([
+    "users.getForSearch",
+    { search: usersFetchQuery },
+  ]);
 
   const handleInviteSubmit = async (event: React.FormEvent<InviteForm>) => {
     event.preventDefault();
@@ -35,7 +40,7 @@ export default function InviteModal({
       { to: [username], from: loggedUser?.name as string },
       {
         async onSuccess([newFoodieGroupId]) {
-          setIsComponentVisible(false);
+          setIsModalVisible(false);
 
           dispatch({
             type: "overwrite",
@@ -83,7 +88,7 @@ export default function InviteModal({
       <div className="text-center text-7xl text-teal-200 mt-4">
         Invite a friend
       </div>
-      <form action="" className="" onSubmit={handleInviteSubmit}>
+      <form action="" onSubmit={handleInviteSubmit}>
         <fieldset
           disabled={inviteMutation.isLoading}
           className="flex justify-center items-center mt-14 gap-10"
@@ -94,6 +99,11 @@ export default function InviteModal({
               type="text"
               id="username"
               className="border-black border-2 text-black"
+              onChange={async (e) => {
+                console.log("on change ", e.target.value);
+                setUsersFetchQuery(e.target.value);
+                getUsersForSearchQuery.refetch();
+              }}
             />
           </label>
           <input
@@ -103,6 +113,23 @@ export default function InviteModal({
           />
         </fieldset>
       </form>
+      <div className="mt-5 ml-20">
+        {getUsersForSearchQuery.isLoading ? (
+          "Loading..."
+        ) : (
+          <ul>
+            {getUsersForSearchQuery.isSuccess &&
+              getUsersForSearchQuery.data.map((user) => (
+                <li key={user.id}>
+                  <div className="flex gap-5">
+                    <div>{user.online ? "🟢" : "🔴"}</div>
+                    <div>{user.name}</div>
+                  </div>
+                </li>
+              ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

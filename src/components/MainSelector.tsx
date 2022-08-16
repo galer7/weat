@@ -59,7 +59,7 @@ const MainSelector = ({ name }: { name: string }) => {
     <div className="flex flex-col">
       {currentUserState.map((restaurant, restaurantIndex) => (
         <div
-          className="border-2 bg-yellow-500 border-transparent m-1 rounded-lg relative w-36"
+          className="border-2 bg-yellow-500 border-transparent m-1 rounded-lg relative"
           key={restaurantIndex}
         >
           {isCurrentUser && (
@@ -74,9 +74,10 @@ const MainSelector = ({ name }: { name: string }) => {
               </button>
             </div>
           )}
-          <div className="flex justify-start gap-5 ml-2">
+          <div className="flex justify-start gap-5 ml-10">
             {isCurrentUser && (
               <button
+                className="text-black"
                 onClick={() =>
                   dispatch({
                     type: "restaurant:change",
@@ -89,9 +90,12 @@ const MainSelector = ({ name }: { name: string }) => {
                 ⮜
               </button>
             )}
-            <div>{currentUserState[restaurantIndex]?.name}</div>
+            <div className="text-black">
+              {currentUserState[restaurantIndex]?.name}
+            </div>
             {isCurrentUser && (
               <button
+                className="text-black"
                 onClick={() =>
                   dispatch({
                     type: "restaurant:change",
@@ -167,6 +171,7 @@ const MainSelector = ({ name }: { name: string }) => {
                         ⮞
                       </button>
                     )}
+                    <div className="mx-4"></div>
                   </div>
                 </div>
               )

@@ -3,7 +3,7 @@
 
 generator client {
     provider        = "prisma-client-js"
-    previewFeatures = ["referentialIntegrity"]
+    previewFeatures = ["referentialIntegrity", "fullTextSearch", "fullTextIndex"]
 }
 
 datasource db {
@@ -50,6 +50,8 @@ model User {
     sessions      Session[]
     foodieGroup   FoodieGroup? @relation(fields: [foodieGroupId], references: [id], onDelete: NoAction)
     foodieGroupId String?
+
+    @@fulltext([name])
 }
 
 model VerificationToken {
