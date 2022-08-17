@@ -50,6 +50,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
           (process.env.NODE_ENV === "production" ? "__Secure-" : "") +
             "next-auth.session-token"
         ],
+      allCookies: context.req.cookies,
     },
   };
 }
@@ -58,12 +59,17 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 const Food: NextPage = ({
   user,
   sessionToken,
-}: { user: User; sessionToken: string } | Record<string, never>) => {
+  allCookies,
+}:
+  | { user: User; sessionToken: string; allCookies: Record<string, string> }
+  | Record<string, never>) => {
   const {
     ref: inviteModalRef,
     isComponentVisible,
     setIsComponentVisible,
   } = useComponentVisible(false);
+
+  console.log({ allCookies });
 
   const { socket, dispatch: dispatchSocket } = useSocket();
   const { addTemporaryToast } = useNotifications();
