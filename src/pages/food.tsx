@@ -46,7 +46,11 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   return {
     props: {
       user: session.user,
-      sessionToken: context.req.cookies["next-auth.session-token"],
+      sessionToken:
+        context.req.cookies[
+          (process.env.NODE_ENV === "production" ? "__Secure-" : "") +
+            "next-auth.session-token"
+        ],
     },
   };
 }
