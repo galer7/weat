@@ -41,8 +41,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     };
   }
 
-  console.log("session ssr", session);
-  console.log(await getProviders());
+  console.log("ssr log", { session, cookies: context.req.cookies });
   return {
     props: {
       user: session.user,
