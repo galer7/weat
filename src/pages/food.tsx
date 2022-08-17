@@ -47,7 +47,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       user: session.user,
       sessionToken:
         context.req.cookies[
-          (process.env.NODE_ENV === "production" ? "__Secure-" : "") +
+          (process.env.VERCEL_URL ? "__Secure-" : "") +
             "next-auth.session-token"
         ],
       allCookies: context.req.cookies,
