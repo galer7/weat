@@ -50,7 +50,7 @@ model User {
     sessions      Session[]
     foodieGroup   FoodieGroup? @relation(fields: [foodieGroupId], references: [id], onDelete: NoAction)
     foodieGroupId String?
-    online        Boolean      @default(true)
+    online        Boolean      @default(false)
 
     @@fulltext([name])
 }
