@@ -40,6 +40,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 type SocketReducerAction = { type: "set-session-token"; token: string };
 
 function socketReducer(_: typeof socket, action: SocketReducerAction) {
+  console.log("socket reducer: ", action);
   switch (action.type) {
     case "set-session-token": {
       return makeSocket(action.token);
