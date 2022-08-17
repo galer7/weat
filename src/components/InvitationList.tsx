@@ -14,13 +14,16 @@ export default function InvitationList() {
   const { dispatch, loggedUser } = useLoggedUser();
 
   useEffect(() => {
-    socket.on("server:invite:sent", (from, to, foodieGroupId) => {
-      console.log("an invite happened!");
-      if (to !== loggedUser?.name) return;
+    socket.on("server:invite:sent", (from, foodieGroupId) => {
+      // no need to check for invite destination, as WS server sends to sockets of the invited user
+      console.log("received invite sent for me!"), { from, foodieGroupId };
 
-      console.log("received invite sent for me!");
-
-      invitationsDispatch({ type: "add", from, to, foodieGroupId, ack: false });
+      invitationsDispatch({
+        type: "add",
+        from,
+        foodieGroupId,
+        ack: false,
+      });
     });
   });
 
@@ -30,19 +33,19 @@ export default function InvitationList() {
   return (
     <div>
       {groupState &&
-        invitations.map(({ from, foodieGroupId, to }, index) => {
+        invitations.map(({ from, foodieGroupId }, index) => {
           return (
             <div key={index} className="relative bg-black rounded-xl p-2">
               <div>
                 Invite received from{" "}
-                <span className="text-yellow-500">{from}</span>
+                <span className="text-yellow-500">{from.name}</span>
               </div>
               <div className="flex justify-evenly mt-2">
                 <button
                   className="bg-green-500 rounded-lg p-2"
                   onClick={() => {
                     acceptInviteMutation.mutate(
-                      { from },
+                      { from: from.id },
                       {
                         onSuccess() {
                           dispatch({
@@ -55,9 +58,11 @@ export default function InvitationList() {
 
                           socket.emit(
                             "user:invite:response",
-                            to,
+                            loggedUser?.id as string,
                             foodieGroupId,
-                            groupState[to] as GroupUserState
+                            groupState[
+                              loggedUser?.id as string
+                            ] as GroupUserState
                           );
 
                           invitationsDispatch({ type: "accept" });
@@ -72,12 +77,12 @@ export default function InvitationList() {
                   className="bg-red-600 p-2 rounded-lg"
                   onClick={() => {
                     refuseInviteMutation.mutate(
-                      { from },
+                      { from: from.id },
                       {
                         onSuccess() {
                           socket.emit(
                             "user:invite:response",
-                            to,
+                            loggedUser?.id as string,
                             foodieGroupId
                           );
 

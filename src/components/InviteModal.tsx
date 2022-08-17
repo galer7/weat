@@ -5,14 +5,7 @@ import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 import { User } from "next-auth";
-
-interface InviteFormFields extends HTMLFormControlsCollection {
-  username: HTMLInputElement;
-}
-
-export interface InviteForm extends HTMLFormElement {
-  readonly elements: InviteFormFields;
-}
+import cn from "classnames";
 
 export default function InviteModal({
   setIsComponentVisible: setIsModalVisible,
@@ -29,15 +22,13 @@ export default function InviteModal({
     { search: usersFetchQuery },
   ]);
 
-  const handleInviteSubmit = async (event: React.FormEvent<InviteForm>) => {
-    event.preventDefault();
-
-    const {
-      username: { value: username },
-    } = event.currentTarget.elements;
-
+  const handleInviteSubmit = async ({
+    id: userId,
+    name: username,
+    image,
+  }: User) => {
     inviteMutation.mutate(
-      { to: [username], from: loggedUser?.name as string },
+      { to: [userId], from: loggedUser?.id as string },
       {
         async onSuccess([newFoodieGroupId]) {
           setIsModalVisible(false);
@@ -54,12 +45,12 @@ export default function InviteModal({
 
           socket.emit(
             "user:invite:sent",
-            loggedUser?.name as string,
-            username,
+            { id: loggedUser?.id as string, name: loggedUser?.name as string },
+            userId,
             // either foodie group was just created, either it existed from SSR
             newFoodieGroupId || (loggedUser?.foodieGroupId as string), // loggedUser?.foodieGroupId is still from closure
             (groupState as GroupState)[
-              loggedUser?.name as string
+              loggedUser?.id as string
             ] as GroupUserState
           );
 
@@ -68,10 +59,11 @@ export default function InviteModal({
             type: "overwrite",
             overwriteState: {
               ...groupState,
-              [username]: {
+              [userId]: {
+                name: username as string,
                 isInviteAccepted: false,
                 restaurants: [],
-                image: loggedUser?.image as string,
+                image: image as string,
               },
             },
           });
@@ -88,7 +80,7 @@ export default function InviteModal({
       <div className="text-center text-7xl text-teal-200 mt-4">
         Invite a friend
       </div>
-      <form action="" onSubmit={handleInviteSubmit} autoComplete="off">
+      <form action="" autoComplete="off">
         <fieldset
           disabled={inviteMutation.isLoading}
           className="flex justify-center items-center mt-14 gap-10"
@@ -110,14 +102,9 @@ export default function InviteModal({
               }}
             />
           </label>
-          <input
-            type="submit"
-            value="SUBMIT"
-            className="bg-gray-800 rounded-lg p-2 h-10 mt-4 cursor-pointer"
-          />
         </fieldset>
       </form>
-      <div className="mt-5 ml-20">
+      <div className="mt-5 ml-15">
         {getUsersForSearchQuery.isLoading ? (
           "Loading..."
         ) : (
@@ -126,11 +113,14 @@ export default function InviteModal({
               getUsersForSearchQuery.data.map((user) => (
                 <li
                   key={user.id}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setUsersFetchQuery(user.name);
-                    getUsersForSearchQuery.refetch();
-                  }}
+                  className={cn(user.online && "cursor-pointer")}
+                  onClick={
+                    user.online
+                      ? () => {
+                          handleInviteSubmit(user);
+                        }
+                      : () => {}
+                  }
                 >
                   <div className="flex gap-5">
                     <div>{user.online ? "🟢" : "🔴"}</div>

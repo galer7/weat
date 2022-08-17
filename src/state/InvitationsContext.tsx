@@ -7,8 +7,7 @@ import {
 } from "react";
 
 type Invitation = {
-  from: string;
-  to: string;
+  from: { name: string; id: string };
   foodieGroupId: string;
   ack: boolean;
 };

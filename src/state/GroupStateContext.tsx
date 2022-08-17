@@ -46,7 +46,7 @@ const restaurants = [
 
 type GroupStateReducerAction =
   | ({
-      name: string;
+      userId: string;
     } & (
       | {
           type: "restaurant:add";
@@ -99,8 +99,8 @@ const groupStateReducer = (
     return action.overwriteState;
   }
 
-  const { name, type } = action;
-  const currentUserState = groupState[name]
+  const { userId, type } = action;
+  const currentUserState = groupState[userId]
     ?.restaurants as SelectedRestaurant[];
 
   switch (type) {
@@ -109,8 +109,8 @@ const groupStateReducer = (
 
       return {
         ...groupState,
-        [name]: {
-          ...(groupState[name] as GroupUserState),
+        [userId]: {
+          ...(groupState[userId] as GroupUserState),
           restaurants: [
             ...currentUserState,
             {
@@ -135,8 +135,8 @@ const groupStateReducer = (
 
       return {
         ...groupState,
-        [name]: {
-          ...(groupState[name] as GroupUserState),
+        [userId]: {
+          ...(groupState[userId] as GroupUserState),
           restaurants: currentUserState?.filter(
             (_, id) => id !== restaurantIndex
           ),
@@ -153,8 +153,8 @@ const groupStateReducer = (
 
       return {
         ...groupState,
-        [name]: {
-          ...(groupState[name] as GroupUserState),
+        [userId]: {
+          ...(groupState[userId] as GroupUserState),
           restaurants: currentUserState?.map((restaurant, id) => {
             if (id !== restaurantIndex) return restaurant;
             return {
@@ -180,8 +180,8 @@ const groupStateReducer = (
 
       return {
         ...groupState,
-        [name]: {
-          ...(groupState[name] as GroupUserState),
+        [userId]: {
+          ...(groupState[userId] as GroupUserState),
           restaurants: currentUserState.map((restaurant, id) => {
             if (id !== restaurantIndex) return restaurant;
             return {
@@ -201,11 +201,27 @@ const groupStateReducer = (
     case "food:remove": {
       const { restaurantIndex, foodItemIndex } = action;
 
+      // if we remove last item from restaurant, remove restaurant all together
+      if (
+        currentUserState[restaurantIndex]?.items.length === 1 &&
+        foodItemIndex === 0
+      )
+        return {
+          ...groupState,
+          [userId]: {
+            ...(groupState[userId] as GroupUserState),
+            restaurants: currentUserState.filter((_, id) => {
+              if (id === restaurantIndex) return false;
+              return true;
+            }),
+          },
+        };
+
       return {
         ...groupState,
-        [name]: {
-          ...(groupState[name] as GroupUserState),
-          restaurants: currentUserState?.map((restaurant, id) => {
+        [userId]: {
+          ...(groupState[userId] as GroupUserState),
+          restaurants: currentUserState.map((restaurant, id) => {
             if (id !== restaurantIndex) return restaurant;
             return {
               ...restaurant,
@@ -236,8 +252,8 @@ const groupStateReducer = (
 
       return {
         ...groupState,
-        [name]: {
-          ...(groupState[name] as GroupUserState),
+        [userId]: {
+          ...(groupState[userId] as GroupUserState),
           restaurants: currentUserState?.map((restaurant, id) => {
             if (id !== restaurantIndex) return restaurant;
             return {

@@ -15,10 +15,10 @@ export const foodRouter = createRouter()
             if (toUser === from) return;
             // Find if the invited user exists
             const foundUser = await prisma.user.findFirst({
-              where: { name: toUser },
+              where: { id: toUser },
             });
             if (!foundUser) {
-              console.log(`there are no users with name ${to}`);
+              console.log(`there are no users with id ${to}`);
               return;
             }
 
@@ -53,7 +53,7 @@ export const foodRouter = createRouter()
               });
 
               await prisma.user.update({
-                where: { name: from },
+                where: { id: from },
                 data: {
                   foodieGroupId: newFoodieGroup.id,
                 },
@@ -74,7 +74,7 @@ export const foodRouter = createRouter()
     }),
     async resolve({ input: { from }, ctx: { session } }) {
       const sender = await prisma.user.findFirst({
-        where: { name: from },
+        where: { id: from },
       });
 
       if (!sender) return;
@@ -93,7 +93,7 @@ export const foodRouter = createRouter()
       // there is really nothing to do for the guy that declines the invite, but we can delete the group from here
       // if only this user was invited to the group and no one else?
       const sender = await prisma.user.findFirst({
-        where: { name: from },
+        where: { id: from },
       });
 
       if (!sender || !sender.foodieGroupId) return;

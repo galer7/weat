@@ -19,6 +19,7 @@ export type SelectedRestaurant = {
 };
 
 export type GroupUserState = {
+  name: string;
   image: string;
   isInviteAccepted: boolean;
   restaurants: SelectedRestaurant[];
@@ -26,18 +27,10 @@ export type GroupUserState = {
 
 export type GroupState = Record<string, GroupUserState>;
 
-export type GroupInvitation = {
-  from: string;
-  foodieGroupId: string;
-  to: string;
-  ack: boolean;
-};
-
 export type ServerToClientEvents = {
   "server:first:render": (stringifiedState: string) => void;
   "server:invite:sent": (
-    from: string,
-    to: string,
+    from: { id: string; name: string },
     foodieGroupId: string
   ) => void;
   "server:state:updated": (stringifiedState: string, name: string) => void;
@@ -46,7 +39,7 @@ export type ServerToClientEvents = {
 export type ClientToServerEvents = {
   "user:first:render": (foodieGroupId: string) => void;
   "user:invite:sent": (
-    from: string,
+    from: { id: string; name: string },
     to: string,
     foodieGroupId: string,
     fromUserState: GroupUserState

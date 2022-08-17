@@ -4,15 +4,14 @@ import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 
-const MainSelector = ({ name }: { name: string }) => {
+const MainSelector = ({ userId }: { userId: string }) => {
   const { socket } = useSocket();
   const { loggedUser } = useLoggedUser();
   const { groupState, dispatch } = useGroupState();
 
-  const loggedName = loggedUser?.name;
-  const isCurrentUser = name === loggedName;
-  const loggedUserState = (groupState as GroupState)[loggedName as string];
-  const currentUserState = (groupState as GroupState)[name]
+  const isCurrentUser = userId === loggedUser?.id;
+  const loggedUserState = (groupState as GroupState)[userId];
+  const currentUserState = (groupState as GroupState)[userId]
     ?.restaurants as SelectedRestaurant[];
   const [isFirstRender, setIsFirstRender] = useState(true);
 
@@ -33,7 +32,7 @@ const MainSelector = ({ name }: { name: string }) => {
       }
 
       console.log("fired emit user:state:updated", [
-        loggedName,
+        userId,
         loggedUser.foodieGroupId,
         loggedUserState,
       ]);
@@ -41,7 +40,7 @@ const MainSelector = ({ name }: { name: string }) => {
       console.log({ loggedUserState });
       socket.emit(
         "user:state:updated",
-        loggedName,
+        userId,
         loggedUser.foodieGroupId as string,
         loggedUserState
       );
@@ -61,7 +60,11 @@ const MainSelector = ({ name }: { name: string }) => {
               <button
                 className="text-red-600"
                 onClick={() =>
-                  dispatch({ type: "restaurant:remove", restaurantIndex, name })
+                  dispatch({
+                    type: "restaurant:remove",
+                    restaurantIndex,
+                    userId,
+                  })
                 }
               >
                 ✕
@@ -77,7 +80,7 @@ const MainSelector = ({ name }: { name: string }) => {
                     type: "restaurant:change",
                     delta: -1,
                     restaurantIndex,
-                    name,
+                    userId,
                   })
                 }
               >
@@ -95,7 +98,7 @@ const MainSelector = ({ name }: { name: string }) => {
                     type: "restaurant:change",
                     delta: 1,
                     restaurantIndex,
-                    name,
+                    userId,
                   })
                 }
               >
@@ -122,7 +125,7 @@ const MainSelector = ({ name }: { name: string }) => {
                             type: "food:remove",
                             foodItemIndex,
                             restaurantIndex,
-                            name,
+                            userId,
                           })
                         }
                       >
@@ -139,7 +142,7 @@ const MainSelector = ({ name }: { name: string }) => {
                             delta: -1,
                             foodItemIndex,
                             restaurantIndex,
-                            name,
+                            userId,
                           })
                         }
                       >
@@ -158,7 +161,7 @@ const MainSelector = ({ name }: { name: string }) => {
                             delta: 1,
                             foodItemIndex,
                             restaurantIndex,
-                            name,
+                            userId,
                           })
                         }
                       >
@@ -177,7 +180,7 @@ const MainSelector = ({ name }: { name: string }) => {
                   dispatch({
                     type: "food:add",
                     restaurantIndex,
-                    name,
+                    userId,
                   })
                 }
               >
@@ -193,7 +196,7 @@ const MainSelector = ({ name }: { name: string }) => {
           onClick={() =>
             dispatch({
               type: "restaurant:add",
-              name,
+              userId,
             })
           }
         >

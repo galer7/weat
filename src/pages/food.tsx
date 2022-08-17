@@ -10,7 +10,6 @@ import { User } from "@prisma/client";
 import MainSelector from "@/components/MainSelector";
 import Loading from "@/components/Loading";
 import superjson from "superjson";
-import { setLocalGroupState } from "@/utils/localStorage";
 import { useGroupState } from "@/state/GroupStateContext";
 import { useSocket } from "@/state/SocketContext";
 import { useNotifications } from "@/state/NotificationsContext";
@@ -63,8 +62,6 @@ const Food: NextPage = ({
     setIsComponentVisible,
   } = useComponentVisible(false);
 
-  const currentName = user?.name as string;
-
   const { socket, dispatch: dispatchSocket } = useSocket();
   const { addTemporaryToast } = useNotifications();
   const { groupState, dispatch: dispatchGroupState } = useGroupState();
@@ -77,7 +74,8 @@ const Food: NextPage = ({
       dispatchGroupState({
         type: "overwrite",
         overwriteState: {
-          [user?.name as string]: {
+          [user?.id as string]: {
+            name: user.name,
             isInviteAccepted: true,
             restaurants: [],
             image: user?.image as string,
@@ -114,17 +112,17 @@ const Food: NextPage = ({
       }
     });
 
-    socket.on("server:state:updated", (stringifiedState, name) => {
+    socket.on("server:state:updated", (stringifiedState, userId) => {
       console.log("server:state:updated", {
         stringifiedState,
-        name,
+        userId,
         groupState,
       });
-      if (name === currentName) return;
+      if (userId === loggedUser?.id) return;
       const parsedState = superjson.parse(stringifiedState);
 
       if (!parsedState) {
-        const { [name]: _, ...restOfGroupState } = groupState as GroupState;
+        const { [userId]: _, ...restOfGroupState } = groupState as GroupState;
         dispatchGroupState({
           type: "overwrite",
           overwriteState: restOfGroupState,
@@ -133,10 +131,6 @@ const Food: NextPage = ({
         // need to save to storage here, because the useEffect from MainSelector
         // is not activated because the loggedInUser is not modified here
         if (Object.keys(restOfGroupState).length === 1) {
-          setLocalGroupState(
-            Object.values(restOfGroupState)[0] as GroupUserState
-          );
-
           dispatchLoggedUser({
             type: "overwrite",
             payload: {
@@ -147,15 +141,17 @@ const Food: NextPage = ({
         }
 
         addTemporaryToast({
-          title: `${name} left your group!`,
+          title: `${(groupState as GroupState)[userId]?.name} left your group!`,
         });
       } else {
         if (
-          (groupState as GroupState)[name] &&
-          !(groupState as GroupState)[name]?.isInviteAccepted
+          (groupState as GroupState)[userId] &&
+          !(groupState as GroupState)[userId]?.isInviteAccepted
         ) {
           addTemporaryToast({
-            title: `${name} joined your group!`,
+            title: `${
+              (groupState as GroupState)[userId]?.name
+            } joined your group!`,
           });
         }
 
@@ -163,7 +159,7 @@ const Food: NextPage = ({
           type: "overwrite",
           overwriteState: {
             ...groupState,
-            [name]: parsedState as GroupUserState,
+            [userId]: parsedState as GroupUserState,
           },
         });
       }
@@ -183,26 +179,28 @@ const Food: NextPage = ({
       />
       <div className="flex gap-2 justify-evenly">
         {groupState &&
-          Object.keys(groupState).map((name, index) => {
+          Object.keys(groupState).map((userId, index) => {
             return (
               <div className={`m-8`} key={index}>
                 <div className="flex flex-col">
-                  {groupState[name]?.image && (
+                  {groupState[userId]?.image && (
                     <div className="h-24 w-24 relative mx-auto mt-3">
                       <Image
                         className="rounded-full"
                         layout="fill"
                         objectFit="cover"
-                        src={(groupState[name] as GroupUserState).image}
+                        src={(groupState[userId] as GroupUserState).image}
                         alt={`Profile picture of ${name}`}
                         priority={true}
                       />
                     </div>
                   )}
-                  <div className="m-4 text-center">{name}</div>
+                  <div className="m-4 text-center">
+                    {groupState[userId]?.name}
+                  </div>
                 </div>
-                {groupState[name]?.isInviteAccepted ? (
-                  <MainSelector name={name} />
+                {groupState[userId]?.isInviteAccepted ? (
+                  <MainSelector userId={userId} />
                 ) : (
                   <div>
                     <div className="m-4">Loading...</div>

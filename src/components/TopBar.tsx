@@ -1,7 +1,6 @@
 import { useGroupState } from "@/state/GroupStateContext";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 import { useSocket } from "@/state/SocketContext";
-import { setLocalGroupState } from "@/utils/localStorage";
 import { trpc } from "@/utils/trpc";
 import { GroupUserState } from "@/utils/types";
 import { signOut } from "next-auth/react";
@@ -17,7 +16,7 @@ export default function TopBar({
   const leaveGroupMutation = trpc.useMutation("food.leave-group");
   const { groupState, dispatch: groupStateDispatch } = useGroupState();
   const { socket } = useSocket();
-  const { loggedUser, dispatch } = useLoggedUser();
+  const { loggedUser, dispatch: loggedUserDispatch } = useLoggedUser();
 
   return (
     <div className="bg-black w-full flex justify-between items-center h-20 flex:before">
@@ -32,7 +31,7 @@ export default function TopBar({
           {loggedUser?.foodieGroupId &&
             groupState &&
             Object.keys(groupState).length >= 2 && (
-              <div className="text-teal-200text-xl font-bold">
+              <div className="text-teal-200 text-xl font-bold">
                 <button
                   onClick={() => {
                     leaveGroupMutation.mutate(
@@ -41,12 +40,12 @@ export default function TopBar({
                         onSuccess() {
                           socket.emit(
                             "user:state:updated",
-                            loggedUser?.name as string,
+                            loggedUser?.id as string,
                             loggedUser?.foodieGroupId as string
                             // pass undefined as the 3rd argument, so that we can delete this user's state
                           );
 
-                          dispatch({
+                          loggedUserDispatch({
                             type: "overwrite",
                             payload: {
                               ...loggedUser,
@@ -57,17 +56,11 @@ export default function TopBar({
                           groupStateDispatch({
                             type: "overwrite",
                             overwriteState: {
-                              [loggedUser?.name as string]: groupState[
-                                loggedUser?.name as string
+                              [loggedUser?.id as string]: groupState[
+                                loggedUser?.id as string
                               ] as GroupUserState,
                             },
                           });
-
-                          setLocalGroupState(
-                            groupState[
-                              loggedUser?.name as string
-                            ] as GroupUserState
-                          );
                         },
                       }
                     );
@@ -93,11 +86,11 @@ export default function TopBar({
                     // users that do not belong to any group can logout DUUH
                     socket.emit(
                       "user:state:updated",
-                      loggedUser.name as string,
+                      loggedUser.id as string,
                       loggedUser.foodieGroupId as string
                     );
 
-                    dispatch({
+                    loggedUserDispatch({
                       type: "overwrite",
                       payload: {
                         ...loggedUser,
