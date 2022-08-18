@@ -10,7 +10,6 @@
 - [x] ws: persist foodieGroup in db
 - [x] add google provider
 - [x] implement sign-out logics: remove user from foodieGroup + ws update state after. if the group has only one user left, delete the group completely
-- [ ] bug: first add restaurant press after user joins the group is not registered (sometimes?)
 - [x] save user state to local storage
 - [x] add leave group button
 - [x] add `accepted_invite` boolean prop on WS and React state for other users, so we can have a pending animation
@@ -20,17 +19,14 @@
 - [x] bug: session dies unexpectedly
 - [x] bug: cannot login after sign-out on non-private browser instance
 - [x] implement online users list on invite submit form
+  - [x] use user id instead of user name everywhere (web app & ws server)
+  - [x] map user session token to socketIO's socketId
 - [ ] make online status depend on WS server socket activity (sockets that are linked to user sessions)
 - [ ] add order now button
 - [ ] add group orders list
 - [x] add user events popup notifications (e.g. user joined your group, user left your group)
   - [ ] TODO: fix joined notification (appears on every update, not good)
 - [ ] make use of CSRF tokens from next-auth. first learn where they are helpful
-- [ ] design selector component
-- [ ] make sure all app routes are protected
-
-Will not implement:
-- [ ] map user state to its account id, not his name (e.g. we can have 2  Google accounts with the name Gabriel Galer)
 
 knowledge gaps
 - [ ] read https://next-auth.js.org/getting-started/upgrade-v4#session strategy jwt/database

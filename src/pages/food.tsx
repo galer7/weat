@@ -17,7 +17,6 @@ import NotificationList from "@/components/NotificationList";
 import InvitationList from "@/components/InvitationList";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 import TopBar from "@/components/TopBar";
-import { getProviders } from "next-auth/react";
 import Image from "next/image";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
