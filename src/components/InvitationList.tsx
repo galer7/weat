@@ -27,8 +27,8 @@ export default function InvitationList() {
     });
   });
 
-  const refuseInviteMutation = trpc.useMutation("food.refuse-invite");
-  const acceptInviteMutation = trpc.useMutation("food.accept-invite");
+  const refuseInviteMutation = trpc.useMutation("group.refuse-invite");
+  const acceptInviteMutation = trpc.useMutation("group.accept-invite");
 
   return (
     <div>

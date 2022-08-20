@@ -14,18 +14,19 @@
 - [x] add leave group button
 - [x] add `accepted_invite` boolean prop on WS and React state for other users, so we can have a pending animation
 - [x] add refuse invite button
-- [x] persist invites
 - [ ] send invite after user with pending invite reloaded the page
+- [ ] add loading animations on all async stuff
+- [ ] use food api and/or add handwritten restaurants with images
 - [x] bug: session dies unexpectedly
 - [x] bug: cannot login after sign-out on non-private browser instance
 - [x] implement online users list on invite submit form
   - [x] use user id instead of user name everywhere (web app & ws server)
   - [x] map user session token to socketIO's socketId
-- [ ] make online status depend on WS server socket activity (sockets that are linked to user sessions)
+- [x] make online status depend on WS server socket activity (sockets that are linked to user sessions)
 - [ ] add order now button
 - [ ] add group orders list
 - [x] add user events popup notifications (e.g. user joined your group, user left your group)
-  - [ ] TODO: fix joined notification (appears on every update, not good)
+  - [x] TODO: fix joined notification (appears on every update, not good)
 - [ ] make use of CSRF tokens from next-auth. first learn where they are helpful
 
 knowledge gaps

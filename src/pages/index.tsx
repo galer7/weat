@@ -9,7 +9,7 @@ const Home: NextPage = () => {
         <div className="absolute left-0 right-0 bottom-0 top-1/3">
           <p className="text-9xl text-center text-yellow-500">WEAT</p>
           <p className="text-center text-white italic">
-            Collaborative layer on top of food delivery service
+            A collaborative layer for food delivery services
           </p>
           <div className="rounded-xl text-center bg-teal-800 border-8 border-transparent table mx-auto my-4">
             <button onClick={() => signIn("google")}>

@@ -27,6 +27,10 @@ export type GroupUserState = {
 
 export type GroupState = Record<string, GroupUserState>;
 
+export type MealAPIResponse = {
+  meals: { idMeal: string; strMeal: string; strMealThumb: string }[];
+};
+
 export type ServerToClientEvents = {
   "server:first:render": (stringifiedState: string) => void;
   "server:invite:sent": (

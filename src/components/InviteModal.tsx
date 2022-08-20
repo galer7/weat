@@ -12,7 +12,7 @@ export default function InviteModal({
 }: {
   setIsComponentVisible: Dispatch<SetStateAction<boolean>>;
 }) {
-  const inviteMutation = trpc.useMutation("food.invite");
+  const inviteMutation = trpc.useMutation("group.invite");
   const { socket } = useSocket();
   const { groupState, dispatch: groupStateDispatch } = useGroupState();
   const { loggedUser, dispatch } = useLoggedUser();

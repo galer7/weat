@@ -18,6 +18,7 @@ import InvitationList from "@/components/InvitationList";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 import TopBar from "@/components/TopBar";
 import Image from "next/image";
+import { trpc } from "@/utils/trpc";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // Get user id
@@ -49,7 +50,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
           (process.env.VERCEL_URL ? "__Secure-" : "") +
             "next-auth.session-token"
         ],
-      allCookies: context.req.cookies,
     },
   };
 }
@@ -58,22 +58,21 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 const Food: NextPage = ({
   user,
   sessionToken,
-  allCookies,
-}:
-  | { user: User; sessionToken: string; allCookies: Record<string, string> }
-  | Record<string, never>) => {
+}: { user: User; sessionToken: string } | Record<string, never>) => {
   const {
     ref: inviteModalRef,
     isComponentVisible,
     setIsComponentVisible,
   } = useComponentVisible(false);
 
-  console.log({ allCookies });
-
   const { socket, dispatch: dispatchSocket } = useSocket();
   const { addTemporaryToast } = useNotifications();
   const { groupState, dispatch: dispatchGroupState } = useGroupState();
   const { loggedUser, dispatch: dispatchLoggedUser } = useLoggedUser();
+
+  const restaurants = trpc.useQuery(["food.getRestaurantMeals"], {
+    staleTime: Infinity,
+  }).data;
 
   useEffect(() => {
     dispatchSocket({ type: "set-session-token", token: sessionToken });
@@ -208,7 +207,7 @@ const Food: NextPage = ({
                   </div>
                 </div>
                 {groupState[userId]?.isInviteAccepted ? (
-                  <MainSelector userId={userId} />
+                  <MainSelector userId={userId} restaurants={restaurants} />
                 ) : (
                   <div>
                     <div className="m-4">Loading...</div>

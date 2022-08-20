@@ -13,7 +13,7 @@ export default function TopBar({
   isComponentVisible: boolean;
   setIsComponentVisible: Dispatch<SetStateAction<boolean>>;
 }) {
-  const leaveGroupMutation = trpc.useMutation("food.leave-group");
+  const leaveGroupMutation = trpc.useMutation("group.leave");
   const { groupState, dispatch: groupStateDispatch } = useGroupState();
   const { socket } = useSocket();
   const { loggedUser, dispatch: loggedUserDispatch } = useLoggedUser();

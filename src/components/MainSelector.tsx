@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
-import type { GroupState, SelectedRestaurant } from "@/utils/types";
+import type {
+  GroupState,
+  MealAPIResponse,
+  SelectedRestaurant,
+} from "@/utils/types";
 import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 
-const MainSelector = ({ userId }: { userId: string }) => {
+const MainSelector = ({
+  userId,
+  restaurants,
+}: {
+  userId: string;
+  restaurants: MealAPIResponse[];
+}) => {
   const { socket } = useSocket();
   const { loggedUser } = useLoggedUser();
   const { groupState, dispatch } = useGroupState();
