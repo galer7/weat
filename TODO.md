@@ -17,6 +17,8 @@
 - [ ] send invite after user with pending invite reloaded the page
 - [ ] add loading animations on all async stuff
 - [ ] use food api and/or add handwritten restaurants with images
+  - [x] add blur effect using `plaiceholder` lib
+  - [ ] make preload work for all images in carousel
 - [x] bug: session dies unexpectedly
 - [x] bug: cannot login after sign-out on non-private browser instance
 - [x] implement online users list on invite submit form

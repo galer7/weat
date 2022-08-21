@@ -152,12 +152,15 @@ const MainSelector = ({ userId }: { userId: string }) => {
                       </button>
                     )}
                     <div>
-                      <div className="h-80">
+                      <div className="h-40 w-20 relative">
                         <Image
-                          src={food.image}
+                          src={food.imageProps.src}
+                          blurDataURL={food.imageProps.blurDataURL}
+                          placeholder="blur"
+                          priority={true}
                           alt={`Photo of ${food.name} dish`}
                           layout="fill"
-                          objectFit="contain"
+                          objectFit="scale-down"
                         />
                       </div>
                       <p>{food.name}</p>
