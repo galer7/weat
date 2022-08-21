@@ -134,10 +134,10 @@ const MainSelector = ({ userId }: { userId: string }) => {
                       </button>
                     </div>
                   )}
-                  <div className="flex justify-start gap-4 ml-2">
+                  <div className="flex justify-start gap-4 ml-2 mt-2">
                     {isCurrentUser && (
                       <button
-                        className="z-10"
+                        className="z-10 text-yellow-500"
                         onClick={() =>
                           dispatch({
                             type: "food:change",
@@ -151,8 +151,8 @@ const MainSelector = ({ userId }: { userId: string }) => {
                         ⮜
                       </button>
                     )}
-                    <div>
-                      <div className="h-40 w-20 relative">
+                    <div className="w-64">
+                      <div className="h-32 w-64 relative rounded-xl overflow-hidden">
                         <Image
                           src={food.imageProps.src}
                           blurDataURL={food.imageProps.blurDataURL}
@@ -160,15 +160,13 @@ const MainSelector = ({ userId }: { userId: string }) => {
                           priority={true}
                           alt={`Photo of ${food.name} dish`}
                           layout="fill"
-                          objectFit="scale-down"
+                          objectFit="cover"
                         />
                       </div>
-                      <p>{food.name}</p>
-                      <p>${food.price}</p>
                     </div>
                     {isCurrentUser && (
                       <button
-                        className="z-10"
+                        className="z-10 text-yellow-500"
                         onClick={() =>
                           dispatch({
                             type: "food:change",
@@ -183,6 +181,11 @@ const MainSelector = ({ userId }: { userId: string }) => {
                       </button>
                     )}
                     <div className="mx-4"></div>
+                  </div>
+
+                  <div className="ml-10 w-64 mt-2">
+                    <p className="break-words">{food.name}</p>
+                    <p>${food.price}</p>
                   </div>
                 </div>
               )

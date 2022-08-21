@@ -1,8 +1,12 @@
 import type { NextPage } from "next";
 import Image from "next/image";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 
 const Home: NextPage = () => {
+  const { status } = useSession();
+  const router = useRouter();
+
   return (
     <div>
       <main>
@@ -12,7 +16,14 @@ const Home: NextPage = () => {
             A collaborative layer for food delivery services
           </p>
           <div className="rounded-xl text-center bg-teal-800 border-8 border-transparent table mx-auto my-4">
-            <button onClick={() => signIn("google")}>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+
+                if (status === "authenticated") router.push("/food");
+                else signIn("google");
+              }}
+            >
               <a className="text-teal-200">Join a group and order some food</a>
             </button>
           </div>

@@ -29,7 +29,7 @@ export const foodRouter = createRouter().query("getRestaurantMeals", {
                 return {
                   name: meal?.strMeal,
                   image: meal?.strMealThumb,
-                  price: (Math.random() * 100).toFixed(2),
+                  price: (10 + Math.random() * 10).toFixed(2),
                 };
               })
               .then(async ({ image, ...data }) => {
