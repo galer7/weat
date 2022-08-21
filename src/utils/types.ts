@@ -1,6 +1,7 @@
 export type FoodItem = {
   name: string;
-  price: number;
+  price: string;
+  image: string;
 };
 
 export type Restaurant = {

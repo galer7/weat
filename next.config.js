@@ -4,8 +4,8 @@ const { env } = require("./src/server/env");
 const nextConfig = {
   reactStrictMode: false,
   images: {
-    domains: ['lh3.googleusercontent.com']
-  }
+    domains: ["lh3.googleusercontent.com", "www.themealdb.com"],
+  },
 };
 
 module.exports = nextConfig;

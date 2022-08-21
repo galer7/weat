@@ -1,20 +1,11 @@
 import { useEffect, useState } from "react";
-import type {
-  GroupState,
-  MealAPIResponse,
-  SelectedRestaurant,
-} from "@/utils/types";
+import type { GroupState, SelectedRestaurant } from "@/utils/types";
 import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
 import { useLoggedUser } from "@/state/LoggedUserContext";
+import Image from "next/image";
 
-const MainSelector = ({
-  userId,
-  restaurants,
-}: {
-  userId: string;
-  restaurants: MealAPIResponse[];
-}) => {
+const MainSelector = ({ userId }: { userId: string }) => {
   const { socket } = useSocket();
   const { loggedUser } = useLoggedUser();
   const { groupState, dispatch } = useGroupState();
@@ -129,7 +120,7 @@ const MainSelector = ({
                   {isCurrentUser && (
                     <div className="absolute top-0 right-1">
                       <button
-                        className="text-red-600"
+                        className="text-red-600 z-10"
                         onClick={() =>
                           dispatch({
                             type: "food:remove",
@@ -146,6 +137,7 @@ const MainSelector = ({
                   <div className="flex justify-start gap-4 ml-2">
                     {isCurrentUser && (
                       <button
+                        className="z-10"
                         onClick={() =>
                           dispatch({
                             type: "food:change",
@@ -160,11 +152,20 @@ const MainSelector = ({
                       </button>
                     )}
                     <div>
+                      <div className="h-80">
+                        <Image
+                          src={food.image}
+                          alt={`Photo of ${food.name} dish`}
+                          layout="fill"
+                          objectFit="contain"
+                        />
+                      </div>
                       <p>{food.name}</p>
-                      <p>${food.price.toFixed(2)}</p>
+                      <p>${food.price}</p>
                     </div>
                     {isCurrentUser && (
                       <button
+                        className="z-10"
                         onClick={() =>
                           dispatch({
                             type: "food:change",

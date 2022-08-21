@@ -1,26 +1,50 @@
-import { MealAPIResponse } from "@/utils/types";
+import { FoodItem, MealAPIResponse, Restaurant } from "@/utils/types";
 import { createRouter } from "./context";
+import memoryCache from "memory-cache";
 
+memoryCache.clear();
 const NR_RESTAURANTS = 5;
 const NR_MEALS_PER_RESTAURANT = 4;
+const CACHED_MEALS_KEY = "cached-restaurant-meals";
 
 export const foodRouter = createRouter().query("getRestaurantMeals", {
   async resolve() {
-    console.log("!!!!!!!!! fetched meals api");
+    const cachedData = memoryCache.get(CACHED_MEALS_KEY) as Restaurant[];
+    if (cachedData) {
+      console.log("found cache in meals");
+      return cachedData;
+    }
 
-    const result = await Promise.all(
-      Array.from({ length: NR_RESTAURANTS }, () =>
+    const result = (await Promise.all(
+      Array.from({ length: NR_RESTAURANTS }, (_, k) =>
         Promise.all(
           Array.from(
             { length: NR_MEALS_PER_RESTAURANT },
             () =>
-              fetch("https://www.themealdb.com/api/json/v1/1/random.php").then(
-                (res) => res.json()
-              ) as Promise<MealAPIResponse>
+              fetch("https://www.themealdb.com/api/json/v1/1/random.php")
+                .then(async (res) => {
+                  return res.json() as Promise<MealAPIResponse>;
+                })
+                .then(({ meals }) => {
+                  if (!meals.length) return;
+                  const [meal] = meals;
+                  return {
+                    name: meal?.strMeal,
+                    image: meal?.strMealThumb,
+                    price: (Math.random() * 100).toFixed(2),
+                  } as FoodItem;
+                }) as Promise<FoodItem>
           )
-        )
+        ).then((items) => {
+          return {
+            name: `Restaurant ${k + 1}`,
+            items,
+          };
+        })
       )
-    );
+    )) as Restaurant[];
+
+    memoryCache.put(CACHED_MEALS_KEY, result);
     return result;
   },
 });
