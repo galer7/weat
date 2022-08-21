@@ -19,6 +19,7 @@
 - [ ] use food api and/or add handwritten restaurants with images
   - [x] add blur effect using `plaiceholder` lib
   - [ ] make preload work for all images in carousel
+  - [ ] TODO: try https://gist.github.com/alfonmga/af1c8ac2af8cf845f777ba68f4eeab7c
 - [x] bug: session dies unexpectedly
 - [x] bug: cannot login after sign-out on non-private browser instance
 - [x] implement online users list on invite submit form

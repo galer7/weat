@@ -4,6 +4,8 @@ import { useSocket } from "@/state/SocketContext";
 import { useGroupState } from "@/state/GroupStateContext";
 import { useLoggedUser } from "@/state/LoggedUserContext";
 import Image from "next/image";
+import cn from "classnames";
+import { getLoggedUserState } from "@/utils/localStorage";
 
 const MainSelector = ({ userId }: { userId: string }) => {
   const { socket } = useSocket();
@@ -15,6 +17,7 @@ const MainSelector = ({ userId }: { userId: string }) => {
   const currentUserState = (groupState as GroupState)[userId]
     ?.restaurants as SelectedRestaurant[];
   const [isFirstRender, setIsFirstRender] = useState(true);
+  const [isImageLoading, setIsImageLoading] = useState(true);
 
   useEffect(() => {
     if (!isCurrentUser) return;
@@ -24,6 +27,10 @@ const MainSelector = ({ userId }: { userId: string }) => {
         setIsFirstRender(false);
 
         // TODO: local storage stuff
+        dispatch({
+          type: "overwrite",
+          overwriteState: { [loggedUser?.id]: getLoggedUserState() },
+        });
       }
     } else {
       if (isFirstRender) {
@@ -154,13 +161,19 @@ const MainSelector = ({ userId }: { userId: string }) => {
                     <div className="w-64">
                       <div className="h-32 w-64 relative rounded-xl overflow-hidden">
                         <Image
+                          key={`${loggedUser?.id}-${restaurantIndex}-${foodItemIndex}`}
+                          className={cn(
+                            "duration-700 ease-in-out",
+                            isImageLoading
+                              ? "grayscale blur-2xl scale-110"
+                              : "grayscale-0 blur-0 scale-100"
+                          )}
                           src={food.imageProps.src}
-                          blurDataURL={food.imageProps.blurDataURL}
-                          placeholder="blur"
                           priority={true}
                           alt={`Photo of ${food.name} dish`}
                           layout="fill"
                           objectFit="cover"
+                          onLoadingComplete={() => setIsImageLoading(false)}
                         />
                       </div>
                     </div>

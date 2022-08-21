@@ -188,7 +188,7 @@ const Food: NextPage = ({
                   {groupState[userId]?.image && (
                     <div className="h-24 w-24 relative mx-auto mt-3">
                       <Image
-                        className="rounded-full"
+                        className="rounded-full shadow-2xl"
                         layout="fill"
                         objectFit="cover"
                         src={(groupState[userId] as GroupUserState).image}

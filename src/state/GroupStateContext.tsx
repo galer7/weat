@@ -1,3 +1,4 @@
+import { setLoggedUserState } from "@/utils/localStorage";
 import { trpc } from "@/utils/trpc";
 import {
   GroupUserState,
@@ -7,6 +8,7 @@ import {
   SelectedFoodItem,
   Restaurant,
 } from "@/utils/types";
+import { User } from "next-auth";
 import {
   createContext,
   useContext,
@@ -16,6 +18,7 @@ import {
   useState,
   useEffect,
 } from "react";
+import { useLoggedUser } from "./LoggedUserContext";
 
 const GroupStateContext = createContext<{
   groupState: GroupState | null;
@@ -26,9 +29,10 @@ const GroupStateContext = createContext<{
 });
 
 export function GroupStateProvider({ children }: { children: ReactNode }) {
+  const { loggedUser } = useLoggedUser() as { loggedUser: User };
   const [restaurantMeals, setRestaurantMeals] = useState([] as Restaurant[]);
   const [groupState, dispatch] = useReducer(
-    makeGroupStateReducer(restaurantMeals),
+    makeGroupStateReducer({ restaurants: restaurantMeals, loggedUser }),
     null
   );
 
@@ -87,7 +91,13 @@ type GroupStateReducerAction =
     };
 
 const makeGroupStateReducer =
-  (restaurants: Restaurant[]) =>
+  ({
+    restaurants,
+    loggedUser,
+  }: {
+    restaurants: Restaurant[];
+    loggedUser: User;
+  }) =>
   (groupState: GroupState | null, action: GroupStateReducerAction) => {
     console.log("group state dispatch", action);
 
@@ -107,11 +117,12 @@ const makeGroupStateReducer =
     const currentUserState = groupState[userId]
       ?.restaurants as SelectedRestaurant[];
 
+    let result: GroupState;
     switch (type) {
       case "restaurant:add": {
         if (currentUserState.length === restaurants.length) return groupState;
 
-        return {
+        result = {
           ...groupState,
           [userId]: {
             ...(groupState[userId] as GroupUserState),
@@ -131,6 +142,7 @@ const makeGroupStateReducer =
             ],
           },
         };
+        break;
       }
       case "restaurant:remove": {
         const { restaurantIndex } = action;
@@ -140,7 +152,7 @@ const makeGroupStateReducer =
         )
           return groupState;
 
-        return {
+        result = {
           ...groupState,
           [userId]: {
             ...(groupState[userId] as GroupUserState),
@@ -149,6 +161,7 @@ const makeGroupStateReducer =
             ),
           },
         };
+        break;
       }
       case "restaurant:change": {
         const { restaurantIndex, delta } = action;
@@ -158,7 +171,7 @@ const makeGroupStateReducer =
         if (rawNewIndex < 0) rawNewIndex = restaurants.length - 1;
         if (rawNewIndex === restaurants.length) rawNewIndex = 0;
 
-        return {
+        result = {
           ...groupState,
           [userId]: {
             ...(groupState[userId] as GroupUserState),
@@ -185,7 +198,7 @@ const makeGroupStateReducer =
           currentUserState[restaurantIndex] as SelectedRestaurant
         ).originalIndex;
 
-        return {
+        result = {
           ...groupState,
           [userId]: {
             ...(groupState[userId] as GroupUserState),
@@ -204,6 +217,8 @@ const makeGroupStateReducer =
             }),
           },
         };
+
+        break;
       }
       case "food:remove": {
         const { restaurantIndex, foodItemIndex } = action;
@@ -212,8 +227,8 @@ const makeGroupStateReducer =
         if (
           currentUserState[restaurantIndex]?.items.length === 1 &&
           foodItemIndex === 0
-        )
-          return {
+        ) {
+          result = {
             ...groupState,
             [userId]: {
               ...(groupState[userId] as GroupUserState),
@@ -223,8 +238,10 @@ const makeGroupStateReducer =
               }),
             },
           };
+          break;
+        }
 
-        return {
+        result = {
           ...groupState,
           [userId]: {
             ...(groupState[userId] as GroupUserState),
@@ -237,6 +254,7 @@ const makeGroupStateReducer =
             }),
           },
         };
+        break;
       }
       case "food:change": {
         const { restaurantIndex, foodItemIndex, delta } = action;
@@ -257,7 +275,7 @@ const makeGroupStateReducer =
         if (rawNewFoodItemIndex === originalRestaurantItems?.length)
           rawNewFoodItemIndex = 0;
 
-        return {
+        result = {
           ...groupState,
           [userId]: {
             ...(groupState[userId] as GroupUserState),
@@ -278,12 +296,19 @@ const makeGroupStateReducer =
             }),
           },
         };
+        break;
       }
 
       default:
         console.error(`Action object ${action} unknown`);
         return groupState;
     }
+
+    if (loggedUser?.id === userId) {
+      setLoggedUserState(result[userId] as GroupUserState);
+    }
+
+    return result;
   };
 
 export function useGroupState() {
