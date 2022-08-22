@@ -192,7 +192,7 @@ const Food: NextPage = ({
                         layout="fill"
                         objectFit="cover"
                         src={(groupState[userId] as GroupUserState).image}
-                        alt={`Profile picture of ${name}`}
+                        alt={`Profile picture of ${groupState[userId]?.name}`}
                         priority={true}
                       />
                     </div>

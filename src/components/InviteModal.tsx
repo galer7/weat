@@ -22,6 +22,12 @@ export default function InviteModal({
     { search: usersFetchQuery },
   ]);
 
+  const obfuscateName = (name: string) =>
+    name
+      .split(" ")
+      .map((o) => o[0])
+      .join("");
+
   const handleInviteSubmit = async ({
     id: userId,
     name: username,
@@ -60,7 +66,7 @@ export default function InviteModal({
             overwriteState: {
               ...groupState,
               [userId]: {
-                name: username as string,
+                name: obfuscateName(username as string),
                 isInviteAccepted: false,
                 restaurants: [],
                 image: image as string,
@@ -124,7 +130,7 @@ export default function InviteModal({
                 >
                   <div className="flex gap-5">
                     <div>{user.online ? "🟢" : "🔴"}</div>
-                    <div>{user.name}</div>
+                    <div>{obfuscateName(user.name)}</div>
                   </div>
                 </li>
               ))}
