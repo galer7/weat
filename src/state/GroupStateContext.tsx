@@ -84,6 +84,11 @@ type GroupStateReducerAction =
           foodItemIndex: number;
           delta: 1 | -1;
         }
+      | {
+          type: "food:image-loading-done";
+          restaurantIndex: number;
+          foodItemIndex: number;
+        }
     ))
   | {
       type: "overwrite";
@@ -135,6 +140,7 @@ const makeGroupStateReducer =
                     ...(restaurants[currentUserState.length]
                       ?.items[0] as FoodItem),
                     originalIndex: 0,
+                    isImageLoading: true,
                   },
                 ],
                 originalIndex: currentUserState.length,
@@ -144,6 +150,7 @@ const makeGroupStateReducer =
         };
         break;
       }
+
       case "restaurant:remove": {
         const { restaurantIndex } = action;
         if (
@@ -163,6 +170,7 @@ const makeGroupStateReducer =
         };
         break;
       }
+
       case "restaurant:change": {
         const { restaurantIndex, delta } = action;
 
@@ -183,6 +191,7 @@ const makeGroupStateReducer =
                   {
                     ...restaurants[rawNewIndex]?.items[0],
                     originalIndex: 0,
+                    isImageLoading: true,
                   } as SelectedFoodItem,
                 ],
                 originalIndex: rawNewIndex,
@@ -190,7 +199,9 @@ const makeGroupStateReducer =
             }),
           },
         };
+        break;
       }
+
       case "food:add": {
         const { restaurantIndex } = action;
 
@@ -217,9 +228,9 @@ const makeGroupStateReducer =
             }),
           },
         };
-
         break;
       }
+
       case "food:remove": {
         const { restaurantIndex, foodItemIndex } = action;
 
@@ -256,6 +267,7 @@ const makeGroupStateReducer =
         };
         break;
       }
+
       case "food:change": {
         const { restaurantIndex, foodItemIndex, delta } = action;
 
@@ -290,7 +302,32 @@ const makeGroupStateReducer =
                       rawNewFoodItemIndex
                     ],
                     originalIndex: rawNewFoodItemIndex,
+                    isImageLoading: true,
                   } as SelectedFoodItem;
+                }),
+              };
+            }),
+          },
+        };
+        break;
+      }
+
+      case "food:image-loading-done": {
+        const { restaurantIndex, foodItemIndex } = action;
+        result = {
+          ...groupState,
+          [userId]: {
+            ...(groupState[userId] as GroupUserState),
+            restaurants: currentUserState?.map((restaurant, id) => {
+              if (id !== restaurantIndex) return restaurant;
+              return {
+                ...restaurant,
+                items: restaurant.items.map((item, id) => {
+                  if (id !== foodItemIndex) return item;
+                  return {
+                    ...item,
+                    isImageLoading: false,
+                  };
                 }),
               };
             }),

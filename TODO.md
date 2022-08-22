@@ -14,12 +14,9 @@
 - [x] add leave group button
 - [x] add `accepted_invite` boolean prop on WS and React state for other users, so we can have a pending animation
 - [x] add refuse invite button
+- [x] use food api and/or add handwritten restaurants with images
 - [ ] send invite after user with pending invite reloaded the page
-- [ ] add loading animations on all async stuff
-- [ ] use food api and/or add handwritten restaurants with images
-  - [x] add blur effect using `plaiceholder` lib
-  - [ ] make preload work for all images in carousel
-  - [ ] TODO: try https://gist.github.com/alfonmga/af1c8ac2af8cf845f777ba68f4eeab7c
+- [ ] make ws server s.t. we can see blur loading animation for other users!
 - [x] bug: session dies unexpectedly
 - [x] bug: cannot login after sign-out on non-private browser instance
 - [x] implement online users list on invite submit form

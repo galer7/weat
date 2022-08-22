@@ -10,14 +10,13 @@ import { getLoggedUserState } from "@/utils/localStorage";
 const MainSelector = ({ userId }: { userId: string }) => {
   const { socket } = useSocket();
   const { loggedUser } = useLoggedUser();
-  const { groupState, dispatch } = useGroupState();
+  const { groupState, dispatch: dispatchGroupState } = useGroupState();
 
   const isCurrentUser = userId === loggedUser?.id;
   const loggedUserState = (groupState as GroupState)[userId];
   const currentUserState = (groupState as GroupState)[userId]
     ?.restaurants as SelectedRestaurant[];
   const [isFirstRender, setIsFirstRender] = useState(true);
-  const [isImageLoading, setIsImageLoading] = useState(true);
 
   useEffect(() => {
     if (!isCurrentUser) return;
@@ -26,8 +25,10 @@ const MainSelector = ({ userId }: { userId: string }) => {
       if (isFirstRender) {
         setIsFirstRender(false);
 
-        // TODO: local storage stuff
-        dispatch({
+        const localStorageUserState = getLoggedUserState();
+        if (!localStorageUserState) return;
+
+        dispatchGroupState({
           type: "overwrite",
           overwriteState: { [loggedUser?.id]: getLoggedUserState() },
         });
@@ -68,7 +69,7 @@ const MainSelector = ({ userId }: { userId: string }) => {
               <button
                 className="text-red-600"
                 onClick={() =>
-                  dispatch({
+                  dispatchGroupState({
                     type: "restaurant:remove",
                     restaurantIndex,
                     userId,
@@ -79,12 +80,12 @@ const MainSelector = ({ userId }: { userId: string }) => {
               </button>
             </div>
           )}
-          <div className="flex justify-start gap-5 ml-2">
+          <div className="flex justify-start gap-5 ml-2 items-center ">
             {isCurrentUser && (
               <button
                 className="text-black"
                 onClick={() =>
-                  dispatch({
+                  dispatchGroupState({
                     type: "restaurant:change",
                     delta: -1,
                     restaurantIndex,
@@ -102,7 +103,7 @@ const MainSelector = ({ userId }: { userId: string }) => {
               <button
                 className="text-black"
                 onClick={() =>
-                  dispatch({
+                  dispatchGroupState({
                     type: "restaurant:change",
                     delta: 1,
                     restaurantIndex,
@@ -129,7 +130,7 @@ const MainSelector = ({ userId }: { userId: string }) => {
                       <button
                         className="text-red-600 z-10"
                         onClick={() =>
-                          dispatch({
+                          dispatchGroupState({
                             type: "food:remove",
                             foodItemIndex,
                             restaurantIndex,
@@ -145,15 +146,15 @@ const MainSelector = ({ userId }: { userId: string }) => {
                     {isCurrentUser && (
                       <button
                         className="z-10 text-yellow-500"
-                        onClick={() =>
-                          dispatch({
+                        onClick={() => {
+                          dispatchGroupState({
                             type: "food:change",
                             delta: -1,
                             foodItemIndex,
                             restaurantIndex,
                             userId,
-                          })
-                        }
+                          });
+                        }}
                       >
                         ⮜
                       </button>
@@ -161,10 +162,9 @@ const MainSelector = ({ userId }: { userId: string }) => {
                     <div className="w-64">
                       <div className="h-32 w-64 relative rounded-xl overflow-hidden">
                         <Image
-                          key={`${loggedUser?.id}-${restaurantIndex}-${foodItemIndex}`}
                           className={cn(
                             "duration-700 ease-in-out",
-                            isImageLoading
+                            food.isImageLoading
                               ? "grayscale blur-2xl scale-110"
                               : "grayscale-0 blur-0 scale-100"
                           )}
@@ -173,22 +173,29 @@ const MainSelector = ({ userId }: { userId: string }) => {
                           alt={`Photo of ${food.name} dish`}
                           layout="fill"
                           objectFit="cover"
-                          onLoadingComplete={() => setIsImageLoading(false)}
+                          onLoadingComplete={() =>
+                            dispatchGroupState({
+                              type: "food:image-loading-done",
+                              restaurantIndex,
+                              foodItemIndex,
+                              userId,
+                            })
+                          }
                         />
                       </div>
                     </div>
                     {isCurrentUser && (
                       <button
                         className="z-10 text-yellow-500"
-                        onClick={() =>
-                          dispatch({
+                        onClick={() => {
+                          dispatchGroupState({
                             type: "food:change",
                             delta: 1,
                             foodItemIndex,
                             restaurantIndex,
                             userId,
-                          })
-                        }
+                          });
+                        }}
                       >
                         ⮞
                       </button>
@@ -207,7 +214,7 @@ const MainSelector = ({ userId }: { userId: string }) => {
               <button
                 className="rounded-lg bg-black text-yellow-500 p-1 text-center"
                 onClick={() =>
-                  dispatch({
+                  dispatchGroupState({
                     type: "food:add",
                     restaurantIndex,
                     userId,
@@ -224,7 +231,7 @@ const MainSelector = ({ userId }: { userId: string }) => {
         <button
           className="rounded-lg bg-black text-yellow-500 p-1 text-center mt-2"
           onClick={() =>
-            dispatch({
+            dispatchGroupState({
               type: "restaurant:add",
               userId,
             })

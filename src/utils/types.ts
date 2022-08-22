@@ -20,6 +20,7 @@ export type SelectedFoodItem = {
     src: string;
     blurDataURL: string;
   };
+  isImageLoading: boolean;
 };
 
 export type SelectedRestaurant = {
